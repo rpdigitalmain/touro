@@ -81,7 +81,9 @@ test/integration/      Command dispatch and argument handling
 test/e2e/              CLI invoked as a separate process
 ```
 
-## Tests
+## Development checks
+
+`npm run lint` checks the JavaScript source, scripts, and tests. Use `npm run lint:fix` to apply automatic fixes. Linting requires Node.js 22.13 or later within the Node.js 22 line, or Node.js 24 or later.
 
 `npm test` runs all tests. Run a single group with `npm run test:unit`, `npm run test:integration`, or `npm run test:e2e`.
 

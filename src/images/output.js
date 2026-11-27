@@ -13,7 +13,7 @@ async function ensureSubdirectories(output, path) {
     } catch (error) {
       if (error.code !== 'EEXIST') throw error;
       if (!(await lstat(current)).isDirectory()) {
-        throw new Error(`Output path is not a real directory: ${current}`);
+        throw new Error(`Output path is not a real directory: ${current}`, { cause: error });
       }
     }
   }

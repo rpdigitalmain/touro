@@ -20,6 +20,7 @@ jobs:
           node-version: ${{ matrix.node }}
           cache: npm
       - run: npm ci
+      - run: npm run lint
       - run: npm test
       # Smoke-test the packed tarball the way users will install it.
       - name: Install packed CLI globally

@@ -16,6 +16,8 @@
   "os": ["linux", "win32"],
   "scripts": {
     "dev": "node bin/touro.js",
+    "lint": "eslint . --max-warnings=0",
+    "lint:fix": "npm run lint -- --fix",
     "clean": "node --input-type=module -e \"import { rmSync } from 'node:fs'; for (const directory of ['dist-exe', 'build']) rmSync(directory, { recursive: true, force: true })\"",
     "test": "node --test",
     "test:unit": "node --test \"test/unit/**/*.test.js\"",
@@ -32,6 +34,9 @@
     "sharp": "^0.35.5"
   },
   "devDependencies": {
-    "esbuild": "^0.28.2"
+    "@eslint/js": "^10.0.1",
+    "esbuild": "^0.28.2",
+    "eslint": "^10.15.0",
+    "globals": "^17.14.0"
   }
 }
