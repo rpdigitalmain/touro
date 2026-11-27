@@ -1,7 +1,8 @@
 import { Option } from 'commander';
 import { imageFormats } from '../images/formats.js';
 import { ImageSource } from '../images/source.js';
-import { createTable, displayPath, escapeControls, formatSize } from '../terminal/format.js';
+import { escapeControls } from '../terminal/format.js';
+import { presentScan } from '../terminal/presenters/inventory.js';
 
 export function registerScan(program, context) {
   program
@@ -20,16 +21,6 @@ export function registerScan(program, context) {
         });
       }
 
-      const { logger } = context();
-      let totalSize = 0;
-      const row = createTable(logger.out, [{ width: 6 }, { width: 10 }, {}]);
-      if (images.length > 0) row(['FORMAT', 'SIZE', 'PATH']);
-      for (const image of images) {
-        totalSize += image.size;
-        row([image.format.toUpperCase(), formatSize(image.size), displayPath(image.path)]);
-      }
-
-      const label = images.length === 1 ? 'image' : 'images';
-      logger.out(`Found ${images.length} ${label} · ${formatSize(totalSize)} total`);
+      presentScan(context().logger, images);
     });
 }

@@ -88,7 +88,8 @@ src/run.js             Process entry point shared by npm and the executable
 src/cli.js             Global options, command dispatch, and errors
 src/commands/          Commander subcommands and registration
 src/images/            Image discovery, encoding, and file replacement
-src/terminal/          Logging and console formatting
+src/terminal/          Logging and shared console formatting
+src/terminal/presenters/  Optimization and scan reports
 src/runtime/           Sharp loading, platform paths, and package metadata
 scripts/build-exe.mjs  Standalone executable build
 test/unit/             Isolated module tests

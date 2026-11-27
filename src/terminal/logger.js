@@ -14,10 +14,11 @@ export function createLogger(options = {}) {
 
   // Always write "\n": Windows terminals handle it, and "\r\n" would corrupt piped output.
   return {
+    columns: stdout.columns,
     out: (m) => void stdout.write(`${m}\n`),
     info: (m) => void stderr.write(`${m}\n`),
     warn: (m) => void stderr.write(`${paint('yellow', 'warning:')} ${m}\n`),
-    error: (m) => void stderr.write(`${paint('red', 'error:')} ${m}\n`),
+    error: (m, { color = true } = {}) => void stderr.write(`${color ? paint('red', 'error:') : 'error:'} ${m}\n`),
     debug: (m) => {
       if (options.verbose) stderr.write(`${paint('gray', `debug: ${m}`)}\n`);
     },

@@ -57,7 +57,7 @@ describe('cli', () => {
     const result = runIn(root);
     assert.equal(result.code, 0, result.stderr);
     assert.equal(result.stdout, [
-      '0 files processed',
+      '0 images processed',
       '0 optimized · 0 converted · 0 unchanged · 0 failed',
       '',
       '0 B → 0 B · 0 B saved (0.0%)',
@@ -105,17 +105,18 @@ describe('scan', () => {
 
     const all = runIn(root, 'scan');
     assert.equal(all.code, 0, all.stderr);
-    assert.match(all.stdout, /^FORMAT +SIZE +PATH/m);
-    assert.match(all.stdout, /JPEG +3 B +cover\.JPG/);
-    assert.match(all.stdout, /PNG +5 B +client assets\/gallery\/icon\.PNG/);
-    assert.match(all.stdout, /WEBP +6 B +client assets\/gallery\/thumb\.webp/);
-    assert.match(all.stdout, /Found 4 images · 18 B total/);
+    const lines = all.stdout.trimEnd().split('\n');
+    assert.equal(lines[0], 'FORMAT         SIZE  PATH');
+    assert.ok(lines.includes('JPEG            3 B  cover.JPG'));
+    assert.ok(lines.includes('PNG             5 B  client assets/gallery/icon.PNG'));
+    assert.ok(lines.includes('WEBP            6 B  client assets/gallery/thumb.webp'));
+    assert.deepEqual(lines.slice(-2), ['', '4 images found · 18 B total']);
     assert.doesNotMatch(all.stdout, /notes|linked gallery/);
 
     const jpeg = run('scan', root, '--format', 'jpeg');
     assert.equal(jpeg.code, 0, jpeg.stderr);
     assert.match(jpeg.stdout, /JPEG +4 B +client assets\/gallery\/portrait\.jpeg/);
-    assert.match(jpeg.stdout, /Found 2 images · 7 B total/);
+    assert.match(jpeg.stdout, /2 images found · 7 B total/);
   });
 
   it('returns an empty summary or a clear error for an invalid input', async (t) => {
@@ -124,7 +125,7 @@ describe('scan', () => {
 
     const empty = run('scan', root);
     assert.equal(empty.code, 0, empty.stderr);
-    assert.match(empty.stdout, /Found 0 images · 0 B total/);
+    assert.equal(empty.stdout, '0 images found · 0 B total\n');
 
     const missing = run('scan', join(root, 'missing'));
     assert.equal(missing.code, 1);
@@ -151,7 +152,7 @@ describe('optimize', () => {
     assert.equal(result.code, 1);
     assert.match(result.stderr, /Failed: cover\.jpg \(Multiple inputs map to the same target:/);
     assert.match(result.stderr, /Failed: cover\.png \(Multiple inputs map to the same target:/);
-    assert.match(result.stdout, /3 files processed\n0 optimized · 1 converted · 0 unchanged · 2 failed/);
+    assert.match(result.stdout, /3 images processed\n0 optimized · 1 converted · 0 unchanged · 2 failed/);
     assert.deepEqual((await readdir(root)).filter((name) => name !== '.cache').sort(),
       ['cover.jpg', 'cover.png', 'logo.webp']);
   });
@@ -179,12 +180,12 @@ describe('optimize', () => {
     const percent = (saved / original.length * 100).toFixed(1);
     const [header, row, separator, count, breakdown, totalsSeparator, totals] = result.stdout.split('\n');
     const pathColumn = header.indexOf('PATH');
-    assert.equal(header, 'FORMAT        ORIGINAL      FINAL       SAVED    CHANGE  PATH');
+    assert.equal(header, 'FORMAT        ORIGINAL      FINAL       SAVED  REDUCTION  PATH');
     assert.equal(row.slice(0, pathColumn).trim().split(/ {2,}/).join('|'),
-      `PNG → WEBP|${original.length} B|${output.length} B|${saved} B|-${percent}%`);
+      `PNG → WEBP|${original.length} B|${output.length} B|${saved} B|${percent}%`);
     assert.equal(row.slice(pathColumn), `assets/${name}.webp`);
     assert.equal(separator, '');
-    assert.equal(count, '1 file processed');
+    assert.equal(count, '1 image processed');
     assert.equal(breakdown, '0 optimized · 1 converted · 0 unchanged · 0 failed');
     assert.equal(totalsSeparator, '');
     assert.equal(totals, `${original.length} B → ${output.length} B · ${saved} B saved (${percent}%)`);
@@ -209,7 +210,7 @@ describe('optimize', () => {
     const result = runIn(root);
     assert.equal(result.code, 1);
     assert.match(result.stderr, /Failed: assets\/invalid\.jpg/);
-    assert.match(result.stdout, /2 files processed\n1 optimized · 0 converted · 0 unchanged · 1 failed/);
+    assert.match(result.stdout, /2 images processed\n1 optimized · 0 converted · 0 unchanged · 1 failed/);
     const optimized = await readFile(join(nested, 'photo.PNG'));
     assert.ok(optimized.length < original.length);
     assert.equal(await readFile(join(root, 'assets', 'invalid.jpg'), 'utf8'), 'invalid');
@@ -220,7 +221,7 @@ describe('optimize', () => {
 
     const retry = runIn(root, '--quality', '80');
     assert.equal(retry.code, 1);
-    assert.match(retry.stdout, /2 files processed\n0 optimized · 0 converted · 1 unchanged · 1 failed/);
+    assert.match(retry.stdout, /2 images processed\n0 optimized · 0 converted · 1 unchanged · 1 failed/);
     assert.deepEqual(await readdir(nested), ['photo.PNG']);
     assert.deepEqual(await readFile(join(nested, 'photo.PNG')), optimized);
     assert.deepEqual((await readdir(join(root, 'assets'))).sort(), ['invalid.jpg', 'nested']);
