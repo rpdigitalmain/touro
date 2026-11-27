@@ -106,7 +106,15 @@ test/shared/            Reusable test helpers
 
 `npm test` runs all tests once with Vitest. Run a single group with `npm run test:unit`, `npm run test:integration`, or `npm run test:e2e`. Use `npm run test:watch` for interactive development.
 
+`vitest.config.js` runs the test suites in Node.js and discovers `*.test.js` files under `test/`.
+
 `npm run audit:deps` checks `package-lock.json` against the npm registry for known vulnerabilities in runtime and development dependencies. It reports all severities and fails on high or critical findings. CI runs this check on pushes to `main` and `develop`, and on pull requests.
+
+## Code scanning
+
+GitHub CodeQL scans JavaScript on pushes to `main` and on pull requests after the test matrix passes. It runs once on Ubuntu and publishes alerts under **Code scanning** in the **Security** tab using the workflow token.
+
+This workflow uses CodeQL advanced setup. If default setup is enabled for the repository, disable it before enabling this workflow. Private repositories need GitHub Code Security enabled. [GitHub CodeQL setup](https://docs.github.com/en/code-security/how-tos/find-and-fix-code-vulnerabilities/configure-code-scanning/configuring-advanced-setup-for-code-scanning)
 
 ## Standalone executables
 
