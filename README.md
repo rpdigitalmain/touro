@@ -63,7 +63,7 @@ Use `--verbose` for debug output and `--no-color` to disable colored diagnostics
 
 Use `--format jpeg|png|webp` to convert images, or omit it to keep their format. `--quality <number>` sets JPEG and WebP quality from 1 to 100 and defaults to 80. PNG compression is lossless. JPEG conversion uses a white background for transparency. When same-format optimization does not reduce file size, Touro copies the original bytes to the output directory.
 
-The result table shows original and final sizes, bytes saved, and percentage change. The summary measures only the files successfully written. Invalid images, unsupported animations, and destination conflicts are reported per file. The batch continues and returns exit code `1` if any file fails.
+The result table shows original and final sizes, bytes saved, and percentage change. The summary measures only the files successfully written. Invalid images, unsupported animations, and destination conflicts are reported per file. If multiple inputs map to the same output, all of them are skipped before encoding. The batch continues and returns exit code `1` if any file fails.
 
 ## Project layout
 

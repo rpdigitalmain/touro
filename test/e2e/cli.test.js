@@ -121,6 +121,23 @@ describe('scan', () => {
 });
 
 describe('optimize', () => {
+  it('reports colliding destinations before reading image contents and processes the rest', async (t) => {
+    const root = await mkdtemp(join(tmpdir(), 'touro-optimize-'));
+    t.after(() => rm(root, { recursive: true, force: true }));
+    await writeFile(join(root, 'cover.jpg'), 'invalid');
+    await writeFile(join(root, 'cover.png'), 'invalid');
+    await sharp({
+      create: { width: 8, height: 8, channels: 3, background: '#117799' },
+    }).png().toFile(join(root, 'logo.png'));
+
+    const result = runIn(root, 'optimize', '.', '--format', 'webp');
+    assert.equal(result.code, 1);
+    assert.match(result.stderr, /Failed: cover\.jpg \(Multiple inputs map to the same output:/);
+    assert.match(result.stderr, /Failed: cover\.png \(Multiple inputs map to the same output:/);
+    assert.match(result.stdout, /3 files · 1 converted · 0 optimized · 0 unchanged · 2 failed/);
+    assert.deepEqual(await readdir(join(root, 'touro-output')), ['logo.webp']);
+  });
+
   it('converts one file, preserves its original, and measures the written output', async (t) => {
     const root = await mkdtemp(join(tmpdir(), 'touro-optimize-'));
     t.after(() => rm(root, { recursive: true, force: true }));

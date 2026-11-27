@@ -1,10 +1,8 @@
-import { lstat, mkdir, realpath } from 'node:fs/promises';
-import { basename, dirname, relative, resolve } from 'node:path';
 import { CommanderError, InvalidArgumentError, Option } from 'commander';
-import { loadSharp } from '../lib/load-sharp.js';
-import { optimizeImage } from '../lib/optimize-image.js';
-import { imageFormatFor, imageFormats, scanImages } from '../lib/scan-images.js';
-import { displayPath, escapeControls, formatSize } from '../lib/terminal-format.js';
+import { imageFormats } from '../lib/image-formats.js';
+import { optimizeBatch } from '../lib/optimize-batch.js';
+import { createImageProcessor } from '../lib/optimize-image.js';
+import { createTable, displayPath, escapeControls, formatSize } from '../lib/terminal-format.js';
 
 function parseQuality(value) {
   const quality = Number(value);
@@ -14,32 +12,39 @@ function parseQuality(value) {
   return quality;
 }
 
-function report(logger, results, failed, output) {
-  if (results.length > 0) logger.out('FORMAT       ORIGINAL       FINAL        SAVED   CHANGE  PATH');
-  const counts = { converted: 0, optimized: 0, unchanged: 0 };
-  let original = 0;
-  let final = 0;
+function report(logger, { results, failures, summary, output }) {
+  for (const { path, message } of failures) {
+    logger.error(`Failed: ${displayPath(path)} (${escapeControls(message)})`);
+  }
+
+  const { originalSize: original, finalSize: final } = summary;
+  const row = createTable(logger.out, [
+    { width: 11 },
+    { width: 10, align: 'right' },
+    { width: 10, align: 'right' },
+    { width: 11, align: 'right' },
+    { width: 8, align: 'right' },
+    {},
+  ]);
+  if (results.length > 0) row(['FORMAT', 'ORIGINAL', 'FINAL', 'SAVED', 'CHANGE', 'PATH']);
   for (const result of results) {
-    original += result.originalSize;
-    final += result.finalSize;
-    counts[result.status] += 1;
     const from = result.inputFormat.toUpperCase();
     const format = result.status === 'converted' ? `${from} → ${result.outputFormat.toUpperCase()}` : from;
     const saved = result.originalSize - result.finalSize;
     const size = `${saved < 0 ? '-' : ''}${formatSize(Math.abs(saved))}`;
     const change = ((-saved / result.originalSize) * 100).toFixed(1);
-    logger.out([
-      format.padEnd(11),
-      formatSize(result.originalSize).padStart(10),
-      formatSize(result.finalSize).padStart(10),
-      size.padStart(11),
-      `${saved < 0 ? '+' : ''}${change}%`.padStart(8),
+    row([
+      format,
+      formatSize(result.originalSize),
+      formatSize(result.finalSize),
+      size,
+      `${saved < 0 ? '+' : ''}${change}%`,
       displayPath(result.path),
-    ].join('  '));
+    ]);
   }
 
-  const total = results.length + failed;
-  logger.out(`${total} ${total === 1 ? 'file' : 'files'} · ${counts.converted} converted · ${counts.optimized} optimized · ${counts.unchanged} unchanged · ${failed} failed`);
+  const total = results.length + failures.length;
+  logger.out(`${total} ${total === 1 ? 'file' : 'files'} · ${summary.converted} converted · ${summary.optimized} optimized · ${summary.unchanged} unchanged · ${failures.length} failed`);
   if (results.length === 0) return;
 
   const saved = original - final;
@@ -59,57 +64,18 @@ export function registerOptimize(program, context) {
     .option('-o, --output <directory>', 'Output directory (default: touro-output inside the input directory)')
     .option('-q, --quality <number>', 'JPEG and WebP quality from 1 to 100', parseQuality, 80)
     .action(async (path, options, command) => {
-      const { logger } = context();
-      let root;
-      let output;
-      let images;
-      let sharp;
+      let batch;
       try {
-        const input = resolve(path);
-        const stats = await lstat(input);
-        const format = imageFormatFor(input);
-        if (!stats.isDirectory() && !(stats.isFile() && format)) {
-          throw new Error('Expected a directory or a JPEG, PNG, or WebP file.');
-        }
-        root = await realpath(stats.isDirectory() ? input : dirname(input));
-        output = options.output === undefined ? resolve(root, 'touro-output') : resolve(options.output);
-        const existingOutput = await lstat(output).catch((error) => {
-          if (error.code !== 'ENOENT') throw error;
-        });
-        if (existingOutput) {
-          if (!existingOutput.isDirectory()) throw new Error('Output must be a real directory.');
-          output = await realpath(output);
-        }
-        if (relative(root, output) === '') {
-          throw new Error('Choose an output directory separate from the input directory.');
-        }
-        images = stats.isDirectory() ? await scanImages(root, undefined, output) : [{ path: basename(input), format }];
-        if (images.length > 0) {
-          sharp = await loadSharp();
-          await mkdir(output, { recursive: true });
-          if (!(await lstat(output)).isDirectory()) throw new Error('Output must be a real directory.');
-          output = await realpath(output);
-          if (relative(root, output) === '') {
-            throw new Error('Choose an output directory separate from the input directory.');
-          }
-        }
+        batch = await optimizeBatch(path, { ...options, createProcessor: createImageProcessor });
       } catch (error) {
         command.error(`error: Could not optimize "${escapeControls(path)}". ${escapeControls(error.message)}`, {
           code: 'touro.operationFailed',
         });
       }
 
-      const results = [];
-      let failed = 0;
-      for (const image of images) {
-        try {
-          results.push(await optimizeImage(sharp, root, image, output, options.format, options.quality));
-        } catch (error) {
-          failed += 1;
-          logger.error(`Failed: ${displayPath(image.path)} (${escapeControls(error.message)})`);
-        }
+      report(context().logger, batch);
+      if (batch.failures.length > 0) {
+        throw new CommanderError(1, 'touro.operationFailed', 'Some images failed.');
       }
-      report(logger, results, failed, output);
-      if (failed > 0) throw new CommanderError(1, 'touro.operationFailed', 'Some images failed.');
     });
 }

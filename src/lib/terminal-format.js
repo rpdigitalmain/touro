@@ -19,3 +19,13 @@ export function escapeControls(text) {
 export function displayPath(path) {
   return escapeControls(path.split(sep).join('/'));
 }
+
+export function createTable(writeLine, columns) {
+  return (cells) => {
+    const row = cells.map((cell, index) => {
+      const { width = 0, align } = columns[index];
+      return align === 'right' ? cell.padStart(width) : cell.padEnd(width);
+    });
+    writeLine(row.join('  '));
+  };
+}

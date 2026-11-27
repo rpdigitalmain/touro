@@ -16,3 +16,7 @@ Touro follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and uses
 - Weekly Dependabot updates for npm dependencies and GitHub Actions.
 - Recursive `scan` command with an optional format filter, file sizes, and aggregate totals.
 - `optimize` command for JPEG, PNG, and WebP with batch conversion, protected output, and per-file and aggregate savings.
+
+### Changed
+
+- `optimize` detects destination conflicts before encoding and skips all inputs that share a destination.

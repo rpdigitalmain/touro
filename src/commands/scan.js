@@ -1,6 +1,7 @@
 import { Option } from 'commander';
-import { imageFormats, scanImages } from '../lib/scan-images.js';
-import { displayPath, escapeControls, formatSize } from '../lib/terminal-format.js';
+import { imageFormats } from '../lib/image-formats.js';
+import { openImageSource } from '../lib/scan-images.js';
+import { createTable, displayPath, escapeControls, formatSize } from '../lib/terminal-format.js';
 
 export function registerScan(program, context) {
   program
@@ -11,7 +12,8 @@ export function registerScan(program, context) {
     .action(async (path, { format }, command) => {
       let images;
       try {
-        images = await scanImages(path, format);
+        const source = await openImageSource(path);
+        images = await source.listImages({ format });
       } catch (error) {
         command.error(`error: Could not scan "${escapeControls(path)}". ${escapeControls(error.message)}`, {
           code: 'touro.operationFailed',
@@ -20,13 +22,11 @@ export function registerScan(program, context) {
 
       const { logger } = context();
       let totalSize = 0;
-      if (images.length > 0) logger.out('FORMAT  SIZE        PATH');
+      const row = createTable(logger.out, [{ width: 6 }, { width: 10 }, {}]);
+      if (images.length > 0) row(['FORMAT', 'SIZE', 'PATH']);
       for (const image of images) {
         totalSize += image.size;
-        const format = image.format.toUpperCase().padEnd(8);
-        const size = formatSize(image.size).padEnd(12);
-        const path = displayPath(image.path);
-        logger.out(`${format}${size}${path}`);
+        row([image.format.toUpperCase(), formatSize(image.size), displayPath(image.path)]);
       }
 
       const label = images.length === 1 ? 'image' : 'images';

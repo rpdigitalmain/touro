@@ -30,6 +30,10 @@ jobs:
           touro --version
           touro greet CI
           touro info
+          sample="$(mktemp -d)"
+          node --input-type=module -e "import sharp from 'sharp'; await sharp({ create: { width: 8, height: 8, channels: 3, background: 'red' } }).png().toFile(process.argv[1]);" "$sample/input.png"
+          touro optimize "$sample/input.png" --format webp --output "$sample/output"
+          test -s "$sample/output/input.webp"
       # Build and test standalone executables with Node 24.
       - name: Build and test standalone executable
         if: matrix.node == 24

@@ -1,47 +1,53 @@
-import { lstat, readdir } from 'node:fs/promises';
-import { extname, join, relative, resolve } from 'node:path';
+import { lstat, readdir, realpath } from 'node:fs/promises';
+import { basename, dirname, join, relative, resolve } from 'node:path';
+import { imageFormatFor } from './image-formats.js';
 
-const formatsByExtension = new Map([
-  ['.jpg', 'jpeg'],
-  ['.jpeg', 'jpeg'],
-  ['.png', 'png'],
-  ['.webp', 'webp'],
-]);
+function imageFile(path, knownStats) {
+  return {
+    async *images(root, { format }) {
+      const imageFormat = imageFormatFor(path);
+      if (!imageFormat || (format && format !== imageFormat)) return;
 
-export const imageFormats = [...new Set(formatsByExtension.values())];
-
-export function imageFormatFor(path) {
-  return formatsByExtension.get(extname(path).toLowerCase());
+      const stats = knownStats ?? await lstat(path);
+      if (stats.isFile()) {
+        yield { path: relative(root, path), format: imageFormat, size: stats.size };
+      }
+    },
+  };
 }
 
-export async function scanImages(path, format, excludedDirectory) {
-  const root = resolve(path);
-  if (!(await lstat(root)).isDirectory()) {
-    throw new Error('Expected a directory.');
-  }
+function imageDirectory(path) {
+  return {
+    async *images(root, options) {
+      if (options.excludedDirectory && relative(options.excludedDirectory, path) === '') return;
 
-  const images = [];
-  const directories = [root];
-  while (directories.length > 0) {
-    const directory = directories.pop();
-    for (const entry of await readdir(directory, { withFileTypes: true })) {
-      const entryPath = join(directory, entry.name);
-      if (entry.isDirectory()) {
-        if (!excludedDirectory || relative(excludedDirectory, entryPath) !== '') {
-          directories.push(entryPath);
+      for (const entry of await readdir(path, { withFileTypes: true })) {
+        const childPath = join(path, entry.name);
+        if (entry.isDirectory()) {
+          yield* imageDirectory(childPath).images(root, options);
+        } else if (entry.isFile()) {
+          yield* imageFile(childPath).images(root, options);
         }
-        continue;
       }
+    },
+  };
+}
 
-      const imageFormat = imageFormatFor(entry.name);
-      if (!entry.isFile() || !imageFormat || (format && format !== imageFormat)) continue;
-
-      const stats = await lstat(entryPath);
-      if (stats.isFile()) {
-        images.push({ path: relative(root, entryPath), format: imageFormat, size: stats.size });
-      }
-    }
+export async function openImageSource(path, { allowFile = false } = {}) {
+  const input = resolve(path);
+  const stats = await lstat(input);
+  const directory = stats.isDirectory();
+  if (!directory && !(allowFile && stats.isFile() && imageFormatFor(input))) {
+    throw new Error(allowFile ? 'Expected a directory or a JPEG, PNG, or WebP file.' : 'Expected a directory.');
   }
 
-  return images.sort((a, b) => a.path.localeCompare(b.path, 'en'));
+  const root = await realpath(directory ? input : dirname(input));
+  const source = directory ? imageDirectory(root) : imageFile(join(root, basename(input)), stats);
+  return {
+    root,
+    async listImages(options = {}) {
+      const images = await Array.fromAsync(source.images(root, options));
+      return images.sort((a, b) => a.path.localeCompare(b.path, 'en'));
+    },
+  };
 }
