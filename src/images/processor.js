@@ -1,7 +1,7 @@
-import { readFile } from 'node:fs/promises';
+import { lstat, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { configureEncoder, isAnimatedImage } from './formats.js';
-import { writeImageOutput } from './output.js';
+import { replaceImage } from './replace.js';
 import { loadSharp } from '../runtime/load-sharp.js';
 
 export class ImageProcessor {
@@ -15,8 +15,11 @@ export class ImageProcessor {
     return new ImageProcessor(await loadSharp());
   }
 
-  async optimize(root, output, { image, format, targetPath }, quality) {
-    const original = await readFile(join(root, image.path));
+  async optimize(root, { image, format, targetPath }, quality) {
+    const source = join(root, image.path);
+    const stats = await lstat(source, { bigint: true });
+    if (!stats.isFile()) throw new Error('Expected a regular image file.');
+    const original = await readFile(source);
     const pipeline = this.#sharp(original, { failOn: 'warning' });
     const metadata = await pipeline.metadata();
     if (metadata.format !== image.format) {
@@ -32,15 +35,15 @@ export class ImageProcessor {
     const optimized = await pipeline.toBuffer();
     const converted = format !== image.format;
     const unchanged = !converted && optimized.length >= original.length;
-    const bytes = unchanged ? original : optimized;
-    await writeImageOutput(output, targetPath, bytes);
+    if (!unchanged) await replaceImage(source, join(root, targetPath), optimized, stats);
 
     return {
       path: image.path,
+      targetPath,
       inputFormat: image.format,
       outputFormat: format,
       originalSize: original.length,
-      finalSize: bytes.length,
+      finalSize: unchanged ? original.length : optimized.length,
       status: converted ? 'converted' : unchanged ? 'unchanged' : 'optimized',
     };
   }

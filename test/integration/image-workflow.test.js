@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { lstat, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { it } from 'node:test';
-import { writeImageOutput } from '../../src/images/output.js';
+import { replaceImage } from '../../src/images/replace.js';
 import { BatchOptimizer } from '../../src/images/batch-optimizer.js';
 import { ImageSource } from '../../src/images/source.js';
 
@@ -23,15 +23,33 @@ it('returns the same image record for a file and its parent directory', async (t
   assert.deepEqual(await directory.listImages({ format: 'png' }), []);
 });
 
-it('protects an existing output when invoked directly', async (t) => {
+it('preserves both paths and removes the temporary file when publication collides', async (t) => {
   const root = await mkdtemp(join(tmpdir(), 'touro-image-output-'));
   t.after(() => rm(root, { recursive: true, force: true }));
-  const path = join('nested', 'cover.png');
+  const source = join(root, 'cover.png');
+  const target = join(root, 'cover.webp');
   const original = Buffer.from('original');
-  await writeImageOutput(root, path, original);
+  await writeFile(source, original);
+  const stats = await lstat(source, { bigint: true });
+  await writeFile(target, 'occupied');
 
-  await assert.rejects(writeImageOutput(root, path, Buffer.from('replacement')), /Output already exists/);
-  assert.deepEqual(await readFile(join(root, path)), original);
+  await assert.rejects(replaceImage(source, target, Buffer.from('replacement'), stats), /Target already exists/);
+  assert.deepEqual(await readFile(source), original);
+  assert.equal(await readFile(target, 'utf8'), 'occupied');
+  assert.deepEqual((await readdir(root)).sort(), ['cover.png', 'cover.webp']);
+});
+
+it('keeps a source edited during encoding and cleans up the temporary file', async (t) => {
+  const root = await mkdtemp(join(tmpdir(), 'touro-image-replace-'));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const source = join(root, 'cover.png');
+  await writeFile(source, 'original');
+  const stats = await lstat(source, { bigint: true });
+  await writeFile(source, 'updated content');
+
+  await assert.rejects(replaceImage(source, source, Buffer.from('optimized'), stats), /Source changed/);
+  assert.equal(await readFile(source, 'utf8'), 'updated content');
+  assert.deepEqual(await readdir(root), ['cover.png']);
 });
 
 it('plans a batch and aggregates results with an injected processor', async (t) => {
@@ -43,7 +61,7 @@ it('plans a batch and aggregates results with an injected processor', async (t) 
 
   const processed = [];
   const optimizer = new BatchOptimizer(async () => ({
-    async optimize(_root, _output, job) {
+    async optimize(_root, job) {
       processed.push(job.targetPath);
       if (job.image.path === 'icon.png') throw new Error('Test encoder failed.');
       return { status: 'converted', originalSize: 3, finalSize: 2 };

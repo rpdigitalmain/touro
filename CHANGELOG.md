@@ -15,9 +15,9 @@ Touro follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and uses
 - CI on Linux and Windows with Node.js 24 and 26.
 - Weekly Dependabot updates for npm dependencies and GitHub Actions.
 - Recursive `scan` command with an optional format filter, file sizes, and aggregate totals.
-- `optimize` command for JPEG, PNG, and WebP with batch conversion, protected output, and per-file and aggregate savings.
+- Optimization for JPEG, PNG, and WebP with batch conversion and per-file and aggregate savings.
 
 ### Changed
 
-- `optimize` detects destination conflicts before encoding and skips all inputs that share a destination.
+- Running `touro` now optimizes images in place, recursively from the current directory. Format conversions publish beside the original and protect occupied paths.
 - Standalone builds use an ESM entry point and Node.js 26.

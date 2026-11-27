@@ -12,7 +12,7 @@ function parseQuality(value) {
   return quality;
 }
 
-function report(logger, { results, failures, summary, output }) {
+function report(logger, { results, failures, summary }) {
   for (const { path, message } of failures) {
     logger.error(`Failed: ${displayPath(path)} (${escapeControls(message)})`);
   }
@@ -20,9 +20,9 @@ function report(logger, { results, failures, summary, output }) {
   const { originalSize: original, finalSize: final } = summary;
   const row = createTable(logger.out, [
     { width: 11 },
+    { width: 9, align: 'right' },
+    { width: 9, align: 'right' },
     { width: 10, align: 'right' },
-    { width: 10, align: 'right' },
-    { width: 11, align: 'right' },
     { width: 8, align: 'right' },
     {},
   ]);
@@ -39,44 +39,54 @@ function report(logger, { results, failures, summary, output }) {
       formatSize(result.finalSize),
       size,
       `${saved < 0 ? '+' : ''}${change}%`,
-      displayPath(result.path),
+      displayPath(result.targetPath),
     ]);
   }
 
   const total = results.length + failures.length;
-  logger.out(`${total} ${total === 1 ? 'file' : 'files'} · ${summary.converted} converted · ${summary.optimized} optimized · ${summary.unchanged} unchanged · ${failures.length} failed`);
-  if (results.length === 0) return;
-
+  if (results.length > 0) logger.out('');
+  logger.out(`${total} ${total === 1 ? 'file' : 'files'} processed`);
+  logger.out(`${summary.optimized} optimized · ${summary.converted} converted · ${summary.unchanged} unchanged · ${failures.length} failed`);
+  logger.out('');
   const saved = original - final;
   const comparison = `${formatSize(original)} → ${formatSize(final)}`;
-  const difference = `${formatSize(Math.abs(saved))} (${(Math.abs(saved) / original * 100).toFixed(1)}%)`;
-  logger.out(saved === 0 ? `${comparison} · Same size` :
-    `${comparison} · Output is ${difference} ${saved > 0 ? 'smaller' : 'larger'}`);
-  logger.out(`Output: ${displayPath(output)}`);
+  const percent = original === 0 ? 0 : Math.abs(saved) / original * 100;
+  logger.out(`${comparison} · ${formatSize(Math.abs(saved))} ${saved >= 0 ? 'saved' : 'added'} (${percent.toFixed(1)}%)`);
+}
+
+function addOptions(command) {
+  return command
+    .addOption(new Option('--format <format>', 'Convert images to this format').choices(imageFormats))
+    .option('-q, --quality <number>', 'JPEG and WebP quality from 1 to 100 (default: 80)', parseQuality);
 }
 
 export function registerOptimize(program, context) {
   const optimizer = new BatchOptimizer(ImageProcessor.create);
-  program
-    .command('optimize')
-    .description('Optimize images and compare original and final sizes')
-    .argument('<path>', 'Image file or directory to process recursively')
-    .addOption(new Option('--format <format>', 'Convert images to this format').choices(imageFormats))
-    .option('-o, --output <directory>', 'Output directory (default: touro-output inside the input directory)')
-    .option('-q, --quality <number>', 'JPEG and WebP quality from 1 to 100', parseQuality, 80)
-    .action(async (path, options, command) => {
-      let batch;
-      try {
-        batch = await optimizer.run(path, options);
-      } catch (error) {
-        command.error(`error: Could not optimize "${escapeControls(path)}". ${escapeControls(error.message)}`, {
-          code: 'touro.operationFailed',
-        });
-      }
+  async function optimize(path, options, command) {
+    let batch;
+    try {
+      batch = await optimizer.run(path, options);
+    } catch (error) {
+      command.error(`error: Could not optimize "${escapeControls(path)}". ${escapeControls(error.message)}`, {
+        code: 'touro.operationFailed',
+      });
+    }
 
-      report(context().logger, batch);
-      if (batch.failures.length > 0) {
-        throw new CommanderError(1, 'touro.operationFailed', 'Some images failed.');
-      }
+    report(context().logger, batch);
+    if (batch.failures.length > 0) {
+      throw new CommanderError(1, 'touro.operationFailed', 'Some images failed.');
+    }
+  }
+
+  addOptions(program)
+    .allowExcessArguments()
+    .action((options, command) => {
+      if (command.args.length > 0) command.unknownCommand();
+      return optimize('.', options, command);
     });
+
+  addOptions(program.command('optimize'))
+    .description('Optimize images in place')
+    .argument('[path]', 'Image file or directory to process recursively', '.')
+    .action((path, options, command) => optimize(path, { ...program.opts(), ...options }, command));
 }

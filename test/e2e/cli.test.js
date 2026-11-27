@@ -43,12 +43,27 @@ describe('cli', () => {
     const { code, stdout } = run('--help');
     assert.equal(code, 0);
     assert.match(stdout, /^touro v/);
+    assert.match(stdout, /Optimize JPEG, PNG, and WebP images in place/);
+    assert.match(stdout, /--format/);
+    assert.match(stdout, /--quality/);
+    assert.doesNotMatch(stdout, /--output/);
     assert.match(stdout, /Commands:/);
     assert.match(stdout, /greet/);
   });
 
-  it('exits non-zero without a command', () => {
-    assert.equal(run().code, 1);
+  it('reports an empty optimization run without arguments', async (t) => {
+    const root = await mkdtemp(join(tmpdir(), 'touro-empty-'));
+    t.after(() => rm(root, { recursive: true, force: true }));
+    const result = runIn(root);
+    assert.equal(result.code, 0, result.stderr);
+    assert.equal(result.stdout, [
+      '0 files processed',
+      '0 optimized · 0 converted · 0 unchanged · 0 failed',
+      '',
+      '0 B → 0 B · 0 B saved (0.0%)',
+      '',
+    ].join('\n'));
+    assert.deepEqual(await readdir(root), []);
   });
 
   it('runs a command with options', () => {
@@ -61,6 +76,8 @@ describe('cli', () => {
     const { code, stderr } = run('greet', '--bogus');
     assert.equal(code, 2);
     assert.match(stderr, /bogus/);
+    assert.equal(run('--output', 'obsolete').code, 2);
+    assert.equal(run('--quality', '101').code, 2);
   });
 
   it('prints info as JSON', () => {
@@ -130,36 +147,50 @@ describe('optimize', () => {
       create: { width: 8, height: 8, channels: 3, background: '#117799' },
     }).png().toFile(join(root, 'logo.png'));
 
-    const result = runIn(root, 'optimize', '.', '--format', 'webp');
+    const result = runIn(root, '--format', 'webp');
     assert.equal(result.code, 1);
-    assert.match(result.stderr, /Failed: cover\.jpg \(Multiple inputs map to the same output:/);
-    assert.match(result.stderr, /Failed: cover\.png \(Multiple inputs map to the same output:/);
-    assert.match(result.stdout, /3 files · 1 converted · 0 optimized · 0 unchanged · 2 failed/);
-    assert.deepEqual(await readdir(join(root, 'touro-output')), ['logo.webp']);
+    assert.match(result.stderr, /Failed: cover\.jpg \(Multiple inputs map to the same target:/);
+    assert.match(result.stderr, /Failed: cover\.png \(Multiple inputs map to the same target:/);
+    assert.match(result.stdout, /3 files processed\n0 optimized · 1 converted · 0 unchanged · 2 failed/);
+    assert.deepEqual((await readdir(root)).filter((name) => name !== '.cache').sort(),
+      ['cover.jpg', 'cover.png', 'logo.webp']);
   });
 
-  it('converts one file, preserves its original, and measures the written output', async (t) => {
+  it('converts a nested image in its directory and reports its new path and sizes', async (t) => {
     const root = await mkdtemp(join(tmpdir(), 'touro-optimize-'));
     t.after(() => rm(root, { recursive: true, force: true }));
-    const input = join(root, 'original.png');
+    const nested = join(root, 'assets');
+    await mkdir(nested);
+    const name = 'a long image filename that extends beyond a typical terminal width';
+    const input = join(nested, `${name}.png`);
     const original = await sharp({
       create: { width: 70, height: 70, channels: 4, background: '#ff550080' },
     }).png().toBuffer();
     await writeFile(input, original);
 
-    const result = runIn(root, 'optimize', input, '--format', 'webp');
+    const result = runIn(root, '--format', 'webp', '--quality', '80');
     assert.equal(result.code, 0, result.stderr);
-    assert.deepEqual(await readFile(input), original);
-    const output = await readFile(join(root, 'touro-output', 'original.webp'));
+    assert.deepEqual(await readdir(nested), [`${name}.webp`]);
+    const output = await readFile(join(nested, `${name}.webp`));
     const metadata = await sharp(output).metadata();
     assert.equal(metadata.format, 'webp');
     assert.equal(metadata.hasAlpha, true);
-    assert.match(result.stdout, /FORMAT +ORIGINAL +FINAL +SAVED +CHANGE +PATH/);
-    assert.match(result.stdout, new RegExp(`PNG → WEBP +${original.length} B +${output.length} B`));
-    assert.match(result.stdout, /1 file · 1 converted · 0 optimized · 0 unchanged · 0 failed/);
+    const saved = original.length - output.length;
+    const percent = (saved / original.length * 100).toFixed(1);
+    const [header, row, separator, count, breakdown, totalsSeparator, totals] = result.stdout.split('\n');
+    const pathColumn = header.indexOf('PATH');
+    assert.equal(header, 'FORMAT        ORIGINAL      FINAL       SAVED    CHANGE  PATH');
+    assert.equal(row.slice(0, pathColumn).trim().split(/ {2,}/).join('|'),
+      `PNG → WEBP|${original.length} B|${output.length} B|${saved} B|-${percent}%`);
+    assert.equal(row.slice(pathColumn), `assets/${name}.webp`);
+    assert.equal(separator, '');
+    assert.equal(count, '1 file processed');
+    assert.equal(breakdown, '0 optimized · 1 converted · 0 unchanged · 0 failed');
+    assert.equal(totalsSeparator, '');
+    assert.equal(totals, `${original.length} B → ${output.length} B · ${saved} B saved (${percent}%)`);
   });
 
-  it('continues after invalid images and protects existing batch outputs on retry', async (t) => {
+  it('optimizes in place recursively, skipping internal directories and preserving invalid files', async (t) => {
     const root = await mkdtemp(join(tmpdir(), 'touro-optimize-'));
     t.after(() => rm(root, { recursive: true, force: true }));
     const nested = join(root, 'assets', 'nested');
@@ -169,21 +200,29 @@ describe('optimize', () => {
     }).png({ compressionLevel: 0 }).toBuffer();
     await writeFile(join(nested, 'photo.PNG'), original);
     await writeFile(join(root, 'assets', 'invalid.jpg'), 'invalid');
+    await writeFile(join(root, 'notes.txt'), 'notes');
+    for (const name of ['.git', 'node_modules', 'dist']) {
+      await mkdir(join(root, name));
+      await writeFile(join(root, name, 'ignored.png'), original);
+    }
 
-    const result = runIn(root, 'optimize', './assets');
+    const result = runIn(root);
     assert.equal(result.code, 1);
-    assert.match(result.stderr, /Failed: invalid\.jpg/);
-    assert.match(result.stdout, /2 files · 0 converted · 1 optimized · 0 unchanged · 1 failed/);
-    const destination = join(root, 'assets', 'touro-output', 'nested');
-    const optimized = await readFile(join(destination, 'photo.PNG'));
+    assert.match(result.stderr, /Failed: assets\/invalid\.jpg/);
+    assert.match(result.stdout, /2 files processed\n1 optimized · 0 converted · 0 unchanged · 1 failed/);
+    const optimized = await readFile(join(nested, 'photo.PNG'));
     assert.ok(optimized.length < original.length);
-    assert.deepEqual(await readFile(join(nested, 'photo.PNG')), original);
+    assert.equal(await readFile(join(root, 'assets', 'invalid.jpg'), 'utf8'), 'invalid');
+    assert.equal(await readFile(join(root, 'notes.txt'), 'utf8'), 'notes');
+    for (const name of ['.git', 'node_modules', 'dist']) {
+      assert.deepEqual(await readFile(join(root, name, 'ignored.png')), original);
+    }
 
-    const retry = runIn(root, 'optimize', './assets');
+    const retry = runIn(root, '--quality', '80');
     assert.equal(retry.code, 1);
-    assert.match(retry.stdout, /2 files · 0 converted · 0 optimized · 0 unchanged · 2 failed/);
-    assert.match(retry.stderr, /Output already exists/);
-    assert.deepEqual(await readdir(destination), ['photo.PNG']);
-    assert.deepEqual(await readFile(join(destination, 'photo.PNG')), optimized);
+    assert.match(retry.stdout, /2 files processed\n0 optimized · 0 converted · 1 unchanged · 1 failed/);
+    assert.deepEqual(await readdir(nested), ['photo.PNG']);
+    assert.deepEqual(await readFile(join(nested, 'photo.PNG')), optimized);
+    assert.deepEqual((await readdir(join(root, 'assets'))).sort(), ['invalid.jpg', 'nested']);
   });
 });

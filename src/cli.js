@@ -12,6 +12,7 @@ export async function main(argv) {
 
   const program = new Command()
     .name(pkg.name)
+    .description('Optimize JPEG, PNG, and WebP images in place, recursively from the current directory')
     .version(pkg.version, '-v, --version', 'Show version')
     .helpOption('-h, --help', 'Show help')
     .option('--verbose', 'Print debug output')
@@ -23,11 +24,6 @@ export async function main(argv) {
     pkg,
     logger: createLogger(program.opts()),
   }));
-
-  if (argv.length === 0) {
-    program.outputHelp();
-    return 1;
-  }
 
   try {
     await program.parseAsync(argv, { from: 'user' });

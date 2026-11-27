@@ -2,6 +2,8 @@ import { lstat, readdir, realpath } from 'node:fs/promises';
 import { basename, dirname, join, relative, resolve } from 'node:path';
 import { imageFormatFor } from './formats.js';
 
+const excludedDirectories = new Set(['node_modules', 'bower_components', 'vendor', 'build', 'dist', 'dist-exe']);
+
 class ImageFile {
   #path;
   #knownStats;
@@ -30,11 +32,10 @@ class ImageDirectory {
   }
 
   async *images(root, options) {
-    if (options.excludedDirectory && relative(options.excludedDirectory, this.#path) === '') return;
-
     for (const entry of await readdir(this.#path, { withFileTypes: true })) {
       const childPath = join(this.#path, entry.name);
       if (entry.isDirectory()) {
+        if (entry.name.startsWith('.') || excludedDirectories.has(entry.name.toLowerCase())) continue;
         yield* new ImageDirectory(childPath).images(root, options);
       } else if (entry.isFile()) {
         yield* new ImageFile(childPath).images(root, options);

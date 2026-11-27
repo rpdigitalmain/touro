@@ -43,8 +43,9 @@ jobs:
           touro info
           sample="$(mktemp -d)"
           node --input-type=module -e "import sharp from 'sharp'; await sharp({ create: { width: 8, height: 8, channels: 3, background: 'red' } }).png().toFile(process.argv[1]);" "$sample/input.png"
-          touro optimize "$sample/input.png" --format webp --output "$sample/output"
-          test -s "$sample/output/input.webp"
+          (cd "$sample" && touro --format webp)
+          test -s "$sample/input.webp"
+          test ! -e "$sample/input.png"
       # Build and test ESM standalone executables with Node 26.
       - name: Build and test standalone executable
         if: matrix.node == 26

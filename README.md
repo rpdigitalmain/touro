@@ -15,7 +15,7 @@
 [![License](https://img.shields.io/github/license/rpdigitalmain/touro?color=blue)](LICENSE)
 [![CI](https://github.com/rpdigitalmain/touro/actions/workflows/ci.yml/badge.svg)](https://github.com/rpdigitalmain/touro/actions/workflows/ci.yml)
 
-Touro is a Node.js CLI for image optimization on Linux and Windows, written in JavaScript. Use `scan` to inventory the images in a project.
+Touro is a Node.js CLI that optimizes images in place on Linux and Windows. Use `scan` to inventory the images in a project.
 
 ## Local installation
 
@@ -60,23 +60,25 @@ Replace the example image path with the directory you want to scan. After linkin
 ## Usage
 
 ```sh
-touro --help
+touro
+touro --quality 80
+touro --format webp
 touro scan
-touro scan ./assets
-touro optimize ./assets
-touro optimize ./assets --format webp --output ./optimized
-touro info --json
+touro --help
+touro --version
 ```
 
 Use `--verbose` for debug output and `--no-color` to disable colored diagnostics. Results go to stdout and diagnostics go to stderr. Exit codes are `0` for success, `1` for failure or an unknown command, and `2` for invalid arguments or options.
 
-`touro scan [path]` defaults to the current directory. It lists relative paths, formats, and file sizes for `.jpg`, `.jpeg`, `.png`, and `.webp` files, including uppercase extensions. It searches subdirectories, skips symbolic links, and reports the image count and total size. Format detection is based on the file extension.
+`touro` recursively optimizes JPEG, PNG, and WebP images in the current directory. Same-format optimization keeps the original filename, including the case of its extension, and replaces the file only when the result is smaller. Use `touro optimize <path>` to select a specific image or directory.
 
-`touro optimize <path>` processes one image or a directory recursively. It preserves the source files, mirrors relative paths in `touro-output` inside the input directory, and skips that output directory during discovery. For a single file, the default output directory is next to the file. Use `--output <directory>` to choose another destination. Existing files are protected from overwrites.
+Use `--format jpeg|png|webp` to convert images. Touro writes the complete result to a temporary file in the image's directory. It atomically replaces the original for same-format optimization. Conversion publishes the new extension in the same directory and removes the original after publication succeeds. This step requires hard-link support on the filesystem. Touro skips conversions with occupied target paths or conflicting inputs. Successful runs leave only the final image files.
 
-Use `--format jpeg|png|webp` to convert images, or omit it to keep their format. `--quality <number>` sets JPEG and WebP quality from 1 to 100 and defaults to 80. PNG compression is lossless. JPEG conversion uses a white background for transparency. When same-format optimization does not reduce file size, Touro copies the original bytes to the output directory.
+`--quality <number>` sets JPEG and WebP quality from 1 to 100 and defaults to 80. PNG compression is lossless. JPEG conversion uses a white background for transparency.
 
-The result table shows original and final sizes, bytes saved, and percentage change. The summary measures only the files successfully written. Invalid images, unsupported animations, and destination conflicts are reported per file. If multiple inputs map to the same output, all of them are skipped before encoding. The batch continues and returns exit code `1` if any file fails.
+`touro scan [path]` defaults to the current directory. It lists relative paths, formats, and sizes based on the file extension. Both commands skip symbolic links, directories whose names start with a dot, and directories named `node_modules`, `bower_components`, `vendor`, `build`, `dist`, or `dist-exe`.
+
+The optimization report shows original and final sizes, bytes saved, and percentage change for each successful file and the batch. The file count includes conversions, optimizations, unchanged files, and failures. Touro reports invalid images, unsupported animations, and path conflicts per file and continues the batch. It returns exit code `1` if any file fails.
 
 ## Project layout
 
@@ -85,7 +87,7 @@ bin/touro.js           npm command entry point
 src/run.js             Process entry point shared by npm and the executable
 src/cli.js             Global options, command dispatch, and errors
 src/commands/          Commander subcommands and registration
-src/images/            Image discovery, processing, and output
+src/images/            Image discovery, encoding, and file replacement
 src/terminal/          Logging and console formatting
 src/runtime/           Sharp loading, platform paths, and package metadata
 scripts/build-exe.mjs  Standalone executable build
@@ -111,6 +113,6 @@ npm ci
 npm run build:exe
 ```
 
-The build creates `dist-exe/touro` (`dist-exe/touro.exe` on Windows) for the current platform. The executable includes Node.js and unpacks its image runtime into the local Touro cache on first use of `optimize`. Set `CLI_EXE` to the executable path when running `npm run test:e2e` to test the binary.
+The build creates `dist-exe/touro` (`dist-exe/touro.exe` on Windows) for the current platform. The executable includes Node.js and unpacks its image runtime into the local Touro cache when it first optimizes an image. Set `CLI_EXE` to the executable path when running `npm run test:e2e` to test the binary.
 
 CI runs on Linux and Windows and tests the standalone executable on Node.js 26.

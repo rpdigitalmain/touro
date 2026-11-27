@@ -13,7 +13,7 @@ export function registerScan(program, context) {
       let images;
       try {
         const source = await ImageSource.open(path);
-        images = await source.listImages({ format });
+        images = await source.listImages({ format: format ?? program.opts().format });
       } catch (error) {
         command.error(`error: Could not scan "${escapeControls(path)}". ${escapeControls(error.message)}`, {
           code: 'touro.operationFailed',
