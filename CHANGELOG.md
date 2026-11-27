@@ -19,5 +19,5 @@ Touro follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and uses
 
 ### Changed
 
-- Running `touro` now optimizes images in place, recursively from the current directory. Format conversions publish beside the original and protect occupied paths.
+- Running `touro [directory]` optimizes images in place, recursively from the selected directory. The default is the current directory. Format conversions publish beside the original and protect occupied paths.
 - Standalone builds use an ESM entry point and Node.js 26.

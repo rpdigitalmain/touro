@@ -14,41 +14,28 @@ function parseQuality(value) {
   return quality;
 }
 
-function addOptions(command) {
-  const { MIN, MAX, DEFAULT } = OPTIMIZATION_QUALITY;
-  return command
-    .addOption(new Option('--format <format>', 'Convert images to this format').choices(IMAGE_FORMATS))
-    .option('-q, --quality <number>', `JPEG and WebP quality from ${MIN} to ${MAX} (default: ${DEFAULT})`, parseQuality);
-}
-
-export function registerOptimize(program, context) {
+export function registerOptimization(program, context) {
   const optimizer = new BatchOptimizer(ImageProcessor.create);
-  async function optimize(path, options) {
-    let batch;
-    try {
-      batch = await optimizer.run(path, options);
-    } catch (cause) {
-      throw new TouroError(OPERATION_FAILED, {
-        cause,
-        context: { operation: 'optimize', path },
-      });
-    }
+  const { MIN, MAX, DEFAULT } = OPTIMIZATION_QUALITY;
 
-    presentOptimization(context().logger, batch);
-    if (batch.failures.length > 0) {
-      throw new TouroError(PARTIAL_FAILURE, { context: { failed: batch.failures.length } });
-    }
-  }
+  program
+    .argument('[directory]', 'Directory to optimize recursively', DEFAULT_SOURCE)
+    .addOption(new Option('--format <format>', 'Convert images to this format').choices(IMAGE_FORMATS))
+    .option('-q, --quality <number>', `JPEG and WebP quality from ${MIN} to ${MAX} (default: ${DEFAULT})`, parseQuality)
+    .action(async (path, options) => {
+      let batch;
+      try {
+        batch = await optimizer.run(path, options);
+      } catch (cause) {
+        throw new TouroError(OPERATION_FAILED, {
+          cause,
+          context: { operation: 'optimize', path },
+        });
+      }
 
-  addOptions(program)
-    .allowExcessArguments()
-    .action((options, command) => {
-      if (command.args.length > 0) command.unknownCommand();
-      return optimize(DEFAULT_SOURCE, options);
+      presentOptimization(context().logger, batch);
+      if (batch.failures.length > 0) {
+        throw new TouroError(PARTIAL_FAILURE, { context: { failed: batch.failures.length } });
+      }
     });
-
-  addOptions(program.command('optimize'))
-    .description('Optimize images in place')
-    .argument('[path]', 'Image file or directory to process recursively', DEFAULT_SOURCE)
-    .action((path, options) => optimize(path, { ...program.opts(), ...options }));
 }

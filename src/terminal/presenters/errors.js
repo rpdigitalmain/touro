@@ -43,7 +43,7 @@ function describeError(error, fallback = unexpected) {
   const { code, cause, context } = error;
   switch (code) {
     case IMAGE_ERROR.INVALID_SOURCE:
-      return context.allowFile ? 'choose a directory or a JPEG, PNG, or WebP file.' : 'choose a directory.';
+      return 'choose a directory.';
     case IMAGE_ERROR.NOT_REGULAR:
       return 'the path does not point to a regular image file.';
     case IMAGE_ERROR.FORMAT_MISMATCH:

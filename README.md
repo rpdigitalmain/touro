@@ -95,11 +95,17 @@ Run Touro directly from the terminal:
 # Optimize images in the current directory
 touro
 
+# Optimize images in a specific directory
+touro ./assets
+
+# Optimize a directory whose name contains spaces
+touro "./client assets"
+
 # Set optimization quality
 touro --quality 80
 
-# Convert images to WebP
-touro --format webp
+# Convert images in a specific directory
+touro ./assets --format webp --quality 80
 
 # Scan the current directory
 touro scan
@@ -130,8 +136,10 @@ touro --version
 | Exit code | Meaning |
 |---|---|
 | `0` | Success |
-| `1` | Operation failure or unknown command |
+| `1` | Operation failure, including a missing or invalid target directory |
 | `2` | Invalid arguments or options |
+
+The optimization target must be a directory. Relative and absolute paths are supported. Use `--` before a directory name that starts with a dash or matches a command, as in `touro -- scan`.
 
 ---
 

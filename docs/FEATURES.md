@@ -4,13 +4,13 @@ Touro supports recursive discovery, in-place optimization, and format conversion
 
 ## Image Discovery
 
-Touro discovers JPEG, PNG, and WebP images recursively. Both `scan` and `optimize` skip symbolic links, directories whose names start with a dot, and directories named `node_modules`, `bower_components`, `vendor`, `build`, `dist`, or `dist-exe`.
+Touro discovers JPEG, PNG, and WebP images recursively. Scanning and optimization skip symbolic links, directories whose names start with a dot, and directories named `node_modules`, `bower_components`, `vendor`, `build`, `dist`, or `dist-exe`.
 
-`touro scan [path]` defaults to the current directory. It lists relative paths, formats, and sizes based on the file extension. Use `touro scan --format webp` to list only WebP files.
+`touro scan [directory]` defaults to the current directory. It lists relative paths, formats, and sizes based on the file extension. Use `touro scan --format webp` to list only WebP files.
 
 ## In-Place Optimization
 
-`touro` optimizes images recursively in the current directory. Use `touro optimize <path>` to select a specific image or directory.
+`touro [directory]` optimizes images recursively. It uses the current directory when the argument is omitted. You can pass a relative path such as `touro ./assets`, an absolute path such as `touro /home/user/images`, or quote a path with spaces such as `touro "C:\Users\User\My Pictures"`. Pass `--` before a directory name that starts with a dash or matches a subcommand.
 
 Same-format optimization keeps the original filename, including the case of its extension, and replaces the file only when the result is smaller. Touro writes the complete result to a temporary file in the image's directory, then atomically replaces the original.
 

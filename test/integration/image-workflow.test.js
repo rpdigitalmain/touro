@@ -9,21 +9,16 @@ import { IMAGE_ERROR } from '../../src/images/errors.js';
 import { TouroError } from '../../src/errors/errors.js';
 import { createTemporaryDirectory } from '../shared/temporary-directory.js';
 
-it('returns the same image record for a file and its parent directory', async (t) => {
+it('discovers images with sizes for scan and paths for optimization', async (t) => {
   const root = await createTemporaryDirectory(t, 'touro-image-source-');
   const image = join(root, 'cover.JPG');
   await writeFile(image, 'abc');
 
-  const file = await ImageSource.open(image, { allowFile: true });
   const directory = await ImageSource.open(root);
   const records = [{ path: 'cover.JPG', format: 'jpeg', size: 3 }];
-  assert.equal(file.root, directory.root);
-  assert.deepEqual(await file.listImages({ format: 'jpeg' }), records);
   assert.deepEqual(await directory.listImages({ format: 'jpeg' }), records);
   const pathsOnly = [{ path: 'cover.JPG', format: 'jpeg' }];
-  assert.deepEqual(await file.listImages({ includeSize: false }), pathsOnly);
   assert.deepEqual(await directory.listImages({ includeSize: false }), pathsOnly);
-  assert.deepEqual(await file.listImages({ format: 'png' }), []);
   assert.deepEqual(await directory.listImages({ format: 'png' }), []);
 });
 

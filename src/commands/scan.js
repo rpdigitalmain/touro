@@ -9,7 +9,7 @@ export function registerScan(program, context) {
   program
     .command('scan')
     .description('Find image files recursively by extension')
-    .argument('[path]', 'Directory to scan', DEFAULT_SOURCE)
+    .argument('[directory]', 'Directory to scan', DEFAULT_SOURCE)
     .addOption(new Option('--format <format>', 'Only list images of this format').choices(IMAGE_FORMATS))
     .action(async (path, { format }) => {
       let images;

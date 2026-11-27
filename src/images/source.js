@@ -1,5 +1,5 @@
 import { lstat, readdir, realpath } from 'node:fs/promises';
-import { basename, dirname, join, relative, resolve } from 'node:path';
+import { join, relative, resolve } from 'node:path';
 import { imageFormatFor } from './formats.js';
 import { IMAGE_ERROR } from './errors.js';
 import { TouroError } from '../errors/errors.js';
@@ -8,11 +8,8 @@ const excludedDirectories = new Set(['node_modules', 'bower_components', 'vendor
 
 class ImageFile {
   #path;
-  #knownStats;
-
-  constructor(path, knownStats) {
+  constructor(path) {
     this.#path = path;
-    this.#knownStats = knownStats;
   }
 
   async *images(root, { format, includeSize = true }) {
@@ -25,7 +22,7 @@ class ImageFile {
       return;
     }
 
-    const stats = this.#knownStats ?? await lstat(this.#path);
+    const stats = await lstat(this.#path);
     if (stats.isFile()) yield { ...image, size: stats.size };
   }
 }
@@ -59,19 +56,14 @@ export class ImageSource {
     this.#node = node;
   }
 
-  static async open(path, { allowFile = false } = {}) {
+  static async open(path) {
     const input = resolve(path);
     const stats = await lstat(input);
     if (stats.isDirectory()) {
       const root = await realpath(input);
       return new ImageSource(root, new ImageDirectory(root));
     }
-    if (allowFile && stats.isFile() && imageFormatFor(input)) {
-      const root = await realpath(dirname(input));
-      const file = new ImageFile(join(root, basename(input)), stats);
-      return new ImageSource(root, file);
-    }
-    throw new TouroError(IMAGE_ERROR.INVALID_SOURCE, { context: { allowFile, path: input } });
+    throw new TouroError(IMAGE_ERROR.INVALID_SOURCE, { context: { path: input } });
   }
 
   get root() {

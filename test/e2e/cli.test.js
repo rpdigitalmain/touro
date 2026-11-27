@@ -43,14 +43,15 @@ describe('cli', () => {
     const { code, stdout } = run('--help');
     assert.equal(code, 0);
     assert.match(stdout, /^touro v/);
+    assert.match(stdout, /^Usage: touro \[options\] \[directory\]/m);
     assert.match(stdout, /Optimize JPEG, PNG, and WebP images in place/);
     assert.match(stdout, /--format/);
     assert.match(stdout, /--quality/);
     assert.doesNotMatch(stdout, /--output/);
     assert.match(stdout, /Commands:/);
     assert.match(stdout, /\bscan\b/);
-    assert.match(stdout, /\boptimize\b/);
-    assert.doesNotMatch(stdout, /\bgreet\b|\bhello\b/);
+    assert.match(stdout, /^\s+info \[options\]/m);
+    assert.doesNotMatch(stdout, /^\s+(optimize|greet|hello) \[options\]/m);
   });
 
   it('reports an empty optimization run without arguments', async (t) => {
@@ -67,12 +68,11 @@ describe('cli', () => {
     assert.deepEqual(await readdir(root), []);
   });
 
-  it('rejects the retired greeting command and alias', () => {
-    for (const name of ['greet', 'hello']) {
-      const { code, stderr } = run(name);
-      assert.equal(code, 1);
-      assert.match(stderr, /unknown command/i);
-    }
+  it('rejects the retired optimize subcommand syntax', () => {
+    const { code, stdout, stderr } = run('optimize', './assets');
+    assert.equal(code, 2);
+    assert.equal(stdout, '');
+    assert.match(stderr, /too many arguments/i);
   });
 
   it('reports unknown options with exit code 2', () => {
@@ -167,8 +167,10 @@ describe('optimize', () => {
 
   it('converts a nested image in its directory and reports its new path and sizes', async (t) => {
     const root = await createTemporaryDirectory(t, 'touro-optimize-');
-    const nested = join(root, 'assets');
-    await mkdir(nested);
+    const directory = 'client assets';
+    const nested = join(root, directory, 'assets');
+    await mkdir(nested, { recursive: true });
+    await writeFile(join(root, 'outside.png'), 'outside');
     const name = 'a long image filename that extends beyond a typical terminal width';
     const input = join(nested, `${name}.png`);
     const original = await sharp({
@@ -176,8 +178,9 @@ describe('optimize', () => {
     }).png().toBuffer();
     await writeFile(input, original);
 
-    const result = runIn(root, '--format', 'webp', '--quality', '80');
+    const result = runIn(root, `./${directory}`, '--format', 'webp', '--quality', '80');
     assert.equal(result.code, 0, result.stderr);
+    assert.equal(await readFile(join(root, 'outside.png'), 'utf8'), 'outside');
     assert.deepEqual(await readdir(nested), [`${name}.webp`]);
     const output = await readFile(join(nested, `${name}.webp`));
     const metadata = await sharp(output).metadata();
@@ -196,6 +199,52 @@ describe('optimize', () => {
     assert.equal(breakdown, '0 optimized · 1 converted · 0 unchanged · 0 failed');
     assert.equal(totalsSeparator, '');
     assert.equal(totals, `${original.length} B → ${output.length} B · ${saved} B saved (${percent}%)`);
+  });
+
+  it('optimizes an absolute directory path', async (t) => {
+    const root = await createTemporaryDirectory(t, 'touro-absolute-');
+    const directory = join(root, 'absolute assets');
+    await mkdir(directory);
+    const file = join(directory, 'logo.png');
+    const original = await sharp({
+      create: { width: 32, height: 32, channels: 3, background: '#117799' },
+    }).png({ compressionLevel: 0 }).toBuffer();
+    await writeFile(file, original);
+
+    const result = runIn(root, directory);
+    assert.equal(result.code, 0, result.stderr);
+    assert.match(result.stdout, /1 optimized/);
+    assert.ok((await readFile(file)).length < original.length);
+  });
+
+  it('reports missing directories and rejects files as a target', async (t) => {
+    const root = await createTemporaryDirectory(t, 'touro-invalid-directory-');
+    await writeFile(join(root, 'logo.png'), 'unchanged');
+
+    const missing = runIn(root, 'missing');
+    assert.equal(missing.code, 1);
+    assert.equal(missing.stdout, '');
+    assert.equal(missing.stderr, 'error: Could not optimize "missing": the path does not exist.\n');
+
+    const file = runIn(root, 'logo.png');
+    assert.equal(file.code, 1);
+    assert.equal(file.stdout, '');
+    assert.equal(file.stderr, 'error: Could not optimize "logo.png": choose a directory.\n');
+    assert.equal(await readFile(join(root, 'logo.png'), 'utf8'), 'unchanged');
+  });
+
+  it('treats names after -- as directories even when they match a command or an option', async (t) => {
+    const root = await createTemporaryDirectory(t, 'touro-literal-directory-');
+    await writeFile(join(root, 'outside.png'), 'outside');
+    for (const name of ['--help', 'scan', 'info']) {
+      await mkdir(join(root, name));
+      const result = runIn(root, '--no-color', '--', name);
+      assert.equal(result.code, 0, result.stderr);
+      assert.match(result.stdout, /^0 images processed/m);
+    }
+    const scan = runIn(root, 'scan', '--', 'scan');
+    assert.equal(scan.code, 0, scan.stderr);
+    assert.equal(scan.stdout, '0 images found · 0 B total\n');
   });
 
   it('optimizes in place recursively, skipping internal directories and preserving invalid files', async (t) => {

@@ -6,6 +6,20 @@ import { EXIT_CODE, PARTIAL_FAILURE, UNSUPPORTED_PLATFORM } from './constants/ap
 import { TouroError } from './errors/errors.js';
 import { presentError } from './terminal/presenters/errors.js';
 
+function preserveLiteralDirectory(argv, commands) {
+  const delimiter = argv.indexOf('--');
+  if (delimiter < 0) return argv;
+
+  const directory = argv[delimiter + 1];
+  const names = commands.map((command) => command.name());
+  if (!names.includes(directory) || argv.slice(0, delimiter).some((arg) => names.includes(arg))) {
+    return argv;
+  }
+
+  // Commander still dispatches a matching operand after stripping the delimiter.
+  return [...argv.slice(0, delimiter + 1), `./${directory}`, ...argv.slice(delimiter + 2)];
+}
+
 function handleCliError(logger, error) {
   if (error instanceof CommanderError) {
     if (error.exitCode === EXIT_CODE.SUCCESS) return EXIT_CODE.SUCCESS;
@@ -32,12 +46,14 @@ export async function main(argv) {
 
     program = new Command()
       .name(pkg.name)
-      .description('Optimize JPEG, PNG, and WebP images in place, recursively from the current directory')
+      .usage('[options] [directory]')
+      .description('Optimize JPEG, PNG, and WebP images in place, recursively from the specified directory')
       .version(pkg.version, '-v, --version', 'Show version')
       .helpOption('-h, --help', 'Show help')
       .option('--verbose', 'Print debug output')
       .option('--no-color', 'Disable colored output (or set NO_COLOR=1)')
       .addHelpText('before', `${pkg.name} v${pkg.version}\n`)
+      .addHelpText('after', '\nUse -- before a directory name that starts with "-" or matches a command.')
       .showHelpAfterError(`Run "${pkg.name} --help" for usage.`)
       .exitOverride();
 
@@ -45,7 +61,7 @@ export async function main(argv) {
       pkg,
       logger: createLogger(program.opts()),
     }));
-    await program.parseAsync(argv, { from: 'user' });
+    await program.parseAsync(preserveLiteralDirectory(argv, program.commands), { from: 'user' });
     return EXIT_CODE.SUCCESS;
   } catch (error) {
     const options = program?.opts() ?? (Array.isArray(argv) ? {

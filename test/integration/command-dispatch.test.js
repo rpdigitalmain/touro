@@ -5,17 +5,10 @@ import { main } from '../../src/cli.js';
 describe('CLI command dispatch', () => {
   afterEach(() => vi.restoreAllMocks());
 
-  it('rejects unknown commands', async () => {
-    const stderr = vi.spyOn(process.stderr, 'write').mockReturnValue(true);
-
-    assert.equal(await main(['nope']), 1);
-    assert.match(stderr.mock.calls[0][0], /unknown command.*nope/i);
-  });
-
   it('reports bad option values with exit code 2', async () => {
     const stderr = vi.spyOn(process.stderr, 'write').mockReturnValue(true);
 
-    assert.equal(await main(['optimize', '--quality', 'zero']), 2);
+    assert.equal(await main(['--quality', 'zero']), 2);
     assert.match(stderr.mock.calls[0][0], /Quality must be an integer from 1 to 100/);
   });
 

@@ -2,7 +2,7 @@
 
 ## CLI Execution Flow
 
-The npm launcher and the standalone executable share `src/run.js`. The CLI registers commands with Commander, handles uncaught errors, and chooses the process exit code.
+The npm launcher and the standalone executable share `src/run.js`. Commander dispatches `scan` and `info` or runs the root optimization action with a directory argument. The CLI handles uncaught errors and chooses the process exit code.
 
 Commands call the image modules for discovery and processing. The `scan` command reads file sizes during discovery. The batch optimizer discovers paths and formats, plans target paths, and aggregates results as it processes images sequentially. The processor reads each image, encodes it with Sharp, and delegates safe file replacement to the image replacement module.
 
