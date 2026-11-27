@@ -4,7 +4,7 @@ Touro is a Node.js CLI for image optimization on Linux and Windows, written in J
 
 ## Local installation
 
-Use Node.js 22 or later and run the commands below from the root of your local Touro checkout.
+Use Node.js 24 or 26 and run the commands below from the root of your local Touro checkout.
 
 ### Windows (PowerShell)
 
@@ -83,13 +83,15 @@ test/e2e/              CLI invoked as a separate process
 
 ## Development checks
 
-`npm run lint` checks the JavaScript source, scripts, and tests. Use `npm run lint:fix` to apply automatic fixes. Linting requires Node.js 22.13 or later within the Node.js 22 line, or Node.js 24 or later.
+`npm run lint` checks the JavaScript source, scripts, and tests. Use `npm run lint:fix` to apply automatic fixes.
 
 `npm test` runs all tests. Run a single group with `npm run test:unit`, `npm run test:integration`, or `npm run test:e2e`.
 
+`npm run audit:deps` checks `package-lock.json` against the npm registry for known vulnerabilities in runtime and development dependencies. It reports all severities and fails on high or critical findings. CI runs this check on pushes to `main` and `develop`, and on pull requests.
+
 ## Standalone executables
 
-Use Node.js 26 or later to build the standalone executable.
+Use Node.js 26 to build the standalone executable.
 
 ```sh
 npm ci

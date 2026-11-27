@@ -25,8 +25,8 @@ const options = new Command()
   .option('--out <path>', 'Executable output path', join('dist-exe', binName + exeSuffix))
   .parse()
   .opts();
-if (Number(process.versions.node.split('.')[0]) < 26) {
-  console.error('Building the standalone executable requires Node.js 26 or later.');
+if (Number(process.versions.node.split('.')[0]) !== 26) {
+  console.error('Building the standalone executable requires Node.js 26.');
   process.exit(1);
 }
 

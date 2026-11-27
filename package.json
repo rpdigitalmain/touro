@@ -11,13 +11,14 @@
     "src"
   ],
   "engines": {
-    "node": ">=22"
+    "node": "24.x || 26.x"
   },
   "os": ["linux", "win32"],
   "scripts": {
     "dev": "node bin/touro.js",
     "lint": "eslint . --max-warnings=0",
     "lint:fix": "npm run lint -- --fix",
+    "audit:deps": "npm audit --package-lock-only --include=dev --audit-level=high",
     "clean": "node --input-type=module -e \"import { rmSync } from 'node:fs'; for (const directory of ['dist-exe', 'build']) rmSync(directory, { recursive: true, force: true })\"",
     "test": "node --test",
     "test:unit": "node --test \"test/unit/**/*.test.js\"",

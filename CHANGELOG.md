@@ -12,7 +12,7 @@ Touro follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and uses
 - JavaScript CLI for Linux and Windows with Commander, generated help, and the `greet` and `info` commands.
 - Standalone executable builds for Linux and Windows.
 - Separate unit, integration, and end-to-end test suites.
-- CI on Linux and Windows with Node.js 22 and 24.
+- CI on Linux and Windows with Node.js 24 and 26.
 - Weekly Dependabot updates for npm dependencies and GitHub Actions.
 - Recursive `scan` command with an optional format filter, file sizes, and aggregate totals.
 - `optimize` command for JPEG, PNG, and WebP with batch conversion, protected output, and per-file and aggregate savings.
@@ -20,4 +20,4 @@ Touro follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and uses
 ### Changed
 
 - `optimize` detects destination conflicts before encoding and skips all inputs that share a destination.
-- Standalone builds use an ESM entry point and Node.js 26 or later.
+- Standalone builds use an ESM entry point and Node.js 26.
