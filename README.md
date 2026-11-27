@@ -3,23 +3,49 @@
     src="https://pub-5cb1d207265c4c5484fbf2e19765e499.r2.dev/images/touro-banner.png"
     alt="Touro Banner"
     width="100%"
-    style="max-height: 300px; object-fit: cover;"
   />
 </p>
 
-# Touro
+<h1 align="center">Touro</h1>
 
-![Node.js](https://img.shields.io/badge/Node.js-24%20%7C%2026-339933?logo=node.js&logoColor=white)
-![Platforms](https://img.shields.io/badge/platforms-Linux%20%7C%20Windows-555555)
-![CLI](https://img.shields.io/badge/type-CLI-222222)
-[![License](https://img.shields.io/github/license/rpdigitalmain/touro?color=blue)](LICENSE)
-[![CI](https://github.com/rpdigitalmain/touro/actions/workflows/ci.yml/badge.svg)](https://github.com/rpdigitalmain/touro/actions/workflows/ci.yml)
+<p align="center">
+  A Node.js CLI for image optimization on Linux and Windows.
+  <br />
+  Optimize images in place, recursively, with clear processing reports.
+</p>
 
-Touro is a Node.js CLI that optimizes images in place on Linux and Windows. Use `scan` to inventory the images in a project.
+<p align="center">
+  <img src="https://img.shields.io/badge/Node.js-24%20%7C%2026-339933?logo=node.js&logoColor=white" alt="Node.js 24 and 26" />
+  <img src="https://img.shields.io/badge/platforms-Linux%20%7C%20Windows-555555" alt="Linux and Windows" />
+  <img src="https://img.shields.io/badge/type-CLI-222222" alt="CLI" />
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/rpdigitalmain/touro?color=blue" alt="License" /></a>
+  <a href="https://github.com/rpdigitalmain/touro/actions/workflows/ci.yml"><img src="https://github.com/rpdigitalmain/touro/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
+</p>
 
-## Local installation
+---
 
-Use Node.js 24 or 26 and run the commands below from the root of your local Touro checkout.
+## Overview
+
+Touro optimizes JPEG, PNG, and WebP images directly in their original locations. It supports recursive discovery, format conversion, configurable quality, and processing reports.
+
+## Contents
+
+- [Local Installation](#local-installation)
+- [Usage](#usage)
+- [Features](#features)
+- [Architecture](#architecture)
+- [Development](#development)
+- [Performance Benchmarks](#performance-benchmarks)
+- [Code Scanning](#code-scanning)
+- [Standalone Executables](#standalone-executables)
+
+---
+
+## Local Installation
+
+Requires Node.js 24 or 26.
+
+Clone the repository and install its dependencies:
 
 ### Windows (PowerShell)
 
@@ -29,15 +55,16 @@ npm run dev -- --help
 npm run dev -- scan "C:\path\to\images" --format webp
 ```
 
-To make the CLI available from other directories, link it locally.
+To make the CLI available globally from your local checkout:
 
 ```powershell
 npm link
+
 touro --version
 touro scan "C:\path\to\images"
 ```
 
-If PowerShell blocks the `.ps1` launchers, use `npm.cmd` and `touro.cmd`.
+If PowerShell blocks `.ps1` launchers, use `npm.cmd` and `touro.cmd`.
 
 ### Linux
 
@@ -47,95 +74,264 @@ npm run dev -- --help
 npm run dev -- scan ./assets
 ```
 
-To make the CLI available from other directories, link it locally.
+To make the CLI available globally from your local checkout:
 
 ```sh
 npm link
+
 touro --version
 touro scan ./assets
 ```
 
-Replace the example image path with the directory you want to scan. After linking, `touro scan` scans your current directory. The command links to your checkout and uses its source files directly.
+After linking, `touro scan` operates on the current directory by default. The linked command uses your local checkout and its source files directly.
+
+---
 
 ## Usage
 
+Run Touro directly from the terminal:
+
 ```sh
+# Optimize images in the current directory
 touro
+
+# Set optimization quality
 touro --quality 80
+
+# Convert images to WebP
 touro --format webp
+
+# Scan the current directory
 touro scan
+
+# Display help
 touro --help
+
+# Display version
 touro --version
 ```
 
-Use `--verbose` for debug output, including error stack traces and their causes. Use `--no-color` to disable colored diagnostics. Results go to stdout and diagnostics go to stderr. Exit codes are `0` for success, `1` for failure or an unknown command, and `2` for invalid arguments or options.
+### CLI Options
 
-`touro` recursively optimizes JPEG, PNG, and WebP images in the current directory. Same-format optimization keeps the original filename, including the case of its extension, and replaces the file only when the result is smaller. Use `touro optimize <path>` to select a specific image or directory.
+| Option | Description |
+|---|---|
+| `--quality` | Set JPEG and WebP quality. |
+| `--format` | Convert images during optimization or filter results during a scan. |
+| `--verbose` | Display debug information, error causes, and stack traces. |
+| `--no-color` | Disable colored diagnostics. |
+| `--help` | Display available commands and options. |
+| `--version` | Display the installed version. |
 
-Use `--format jpeg|png|webp` to convert images. Touro writes the complete result to a temporary file in the image's directory. It atomically replaces the original for same-format optimization. Conversion publishes the new extension in the same directory and removes the original after publication succeeds. This step requires hard-link support on the filesystem. Touro skips conversions with occupied target paths or conflicting inputs. Successful runs leave only the final image files.
+### Output and Exit Codes
 
-`--quality <number>` sets JPEG and WebP quality from 1 to 100 and defaults to 80. PNG compression is lossless. JPEG conversion uses a white background for transparency.
+- Results are written to `stdout`.
+- Diagnostics are written to `stderr`.
 
-`touro scan [path]` defaults to the current directory. It lists relative paths, formats, and sizes based on the file extension. Both commands skip symbolic links, directories whose names start with a dot, and directories named `node_modules`, `bower_components`, `vendor`, `build`, `dist`, or `dist-exe`.
+| Exit code | Meaning |
+|---|---|
+| `0` | Success |
+| `1` | Operation failure or unknown command |
+| `2` | Invalid arguments or options |
 
-The optimization report shows original and final sizes, bytes saved, and percentage change for each successful file and the batch. The file count includes conversions, optimizations, unchanged files, and failures. Touro reports invalid images, unsupported animations, and path conflicts per file and continues the batch. It returns exit code `1` if any file fails.
+---
 
-## Project layout
+## Features
 
-```text
-bin/touro.js           npm command entry point
-src/run.js             Process entry point shared by npm and the executable
-src/cli.js             Global options, command dispatch, and errors
-src/commands/          Commander subcommands and registration
-src/images/            Image discovery, encoding, and file replacement
-src/terminal/          Logging and shared console formatting
-src/terminal/presenters/  Optimization and scan reports
-src/runtime/           Sharp loading, platform paths, and package metadata
-src/constants/         Shared application and image definitions
-src/errors/            Shared error model and cleanup handling
-scripts/build-exe.mjs  Standalone executable build
-test/unit/             Isolated module tests
-test/integration/      Command dispatch and argument handling
-test/e2e/               CLI invoked as a separate process
-test/shared/            Reusable test helpers
+Touro provides:
+
+- Recursive image discovery.
+- JPEG, PNG, and WebP optimization.
+- In-place image optimization.
+- Format conversion.
+- Configurable image quality.
+- Processing statistics and size reduction reports.
+- Linux and Windows compatibility.
+
+See [Features](docs/FEATURES.md) for supported formats, directory discovery, file replacement, and processing reports.
+
+---
+
+## Architecture
+
+Touro follows a modular architecture with separated responsibilities for image processing, filesystem operations, application logic, and terminal presentation.
+
+See [Architecture](docs/ARCHITECTURE.md) for the CLI execution flow, module responsibilities, and project structure.
+
+---
+
+## Development
+
+### Code Quality
+
+```sh
+# Run ESLint
+npm run lint
+
+# Apply automatic fixes
+npm run lint:fix
 ```
 
-## Development checks
+ESLint checks JavaScript source files, development scripts, and tests.
 
-`npm run lint` checks the JavaScript source, scripts, and tests. Use `npm run lint:fix` to apply automatic fixes.
+### Automated Tests
 
-`npm test` runs all tests once with Vitest. Run a single group with `npm run test:unit`, `npm run test:integration`, or `npm run test:e2e`. Use `npm run test:watch` for interactive development.
+Touro uses Vitest for automated testing.
 
-`vitest.config.js` runs the test suites in Node.js and discovers `*.test.js` files under `test/`.
+```sh
+# Run all tests
+npm test
 
-`npm run audit:deps` checks `package-lock.json` against the npm registry for known vulnerabilities in runtime and development dependencies. It reports all severities and fails on high or critical findings. CI runs this check on pushes to `main` and `develop`, and on pull requests.
+# Run individual test groups
+npm run test:unit
+npm run test:integration
+npm run test:e2e
 
-## Performance benchmarks
+# Start watch mode
+npm run test:watch
+```
 
-Run `npm run bench` with Node.js 24 or 26. The [Performance workflow](.github/workflows/performance.yml) also runs on demand in GitHub Actions and on Mondays at 04:23 UTC. Benchmarks are separate from `npm test` and publish measurements without enforcing performance thresholds.
+The `vitest.config.js` configuration uses the Node.js environment and discovers `*.test.js` files under `test/`.
 
-- **Startup** launches a fresh Node.js process for each `--help` and `--version` sample.
-- **Discovery** scans nested trees of 100, 500, and 2,000 images. The largest case compares path-only discovery used by optimization with discovery that reads file sizes for `scan`.
-- **Optimization** runs the CLI's batch optimizer for JPEG, PNG, and WebP at 256×256 and 1,024×1,024. Each sample processes three images. Fixture generation and restoration run outside the timed samples. The large-image cases also measure reading, encoding (including metadata), and atomic replacement separately.
-- **Concurrency and memory** compare one and two simultaneous optimization runs on two independent folders with 48 images combined. A separate phase samples RSS and V8 heap every 10 ms for discovery and three rounds per concurrency level. Compare the start and end of each round to spot sustained growth. Sampled peaks can miss shorter spikes, and RSS includes native allocations. The CLI processes its own batches sequentially.
+### Dependency Auditing
 
-Tinybench warms up each scenario and reports the mean, median, and standard deviation in milliseconds. Images per second uses the image count divided by the mean duration. Compare the same scenarios on the same machine, Node.js version, and filesystem. Synthetic fixtures live in a temporary directory that is removed when the run ends.
+```sh
+npm run audit:deps
+```
 
-## Code scanning
+Checks `package-lock.json` against the npm registry for known vulnerabilities in runtime and development dependencies.
 
-GitHub CodeQL scans JavaScript on pushes to `main` and on pull requests after the test matrix passes. It runs once on Ubuntu and publishes alerts under **Code scanning** in the **Security** tab using the workflow token.
+The audit reports all severity levels and fails on high or critical findings.
 
-This workflow uses CodeQL advanced setup. If default setup is enabled for the repository, disable it before enabling this workflow. Private repositories need GitHub Code Security enabled. [GitHub CodeQL setup](https://docs.github.com/en/code-security/how-tos/find-and-fix-code-vulnerabilities/configure-code-scanning/configuring-advanced-setup-for-code-scanning)
+CI runs this check on pushes to `main` and `develop`, and on pull requests.
 
-## Standalone executables
+---
 
-Use Node.js 26 to build the standalone executable.
+## Performance Benchmarks
+
+Run performance benchmarks with Node.js 24 or 26:
+
+```sh
+npm run bench
+```
+
+The [Performance workflow](.github/workflows/performance.yml) also supports manual execution and runs automatically on Mondays at 04:23 UTC.
+
+Benchmarks are independent of `npm test` and publish measurements without enforcing performance thresholds.
+
+### Benchmark Scenarios
+
+**Startup**
+
+Launches a fresh Node.js process for each `--help` and `--version` sample.
+
+**Discovery**
+
+Scans nested directory trees containing 100, 500, and 2,000 images.
+
+The largest scenario compares path-only discovery used by optimization with discovery that also reads file sizes for `scan`.
+
+**Optimization**
+
+Evaluates the CLI batch optimizer using JPEG, PNG, and WebP images at 256×256 and 1,024×1,024 resolutions.
+
+Each sample processes three images. Fixture generation and restoration are excluded from timed measurements.
+
+Large-image scenarios also measure reading, encoding (including metadata), and atomic replacement separately.
+
+**Concurrency and Memory**
+
+Compares one and two simultaneous optimization runs using two independent directories containing 48 images combined.
+
+A separate measurement phase samples RSS and V8 heap every 10 ms during discovery and three rounds per concurrency level.
+
+The CLI processes its own batches sequentially. The benchmark compares two independent sub-batches in the same Node.js process.
+
+### Measurement Methodology
+
+Tinybench warms up each scenario and reports:
+
+- Mean execution time.
+- Median execution time.
+- Standard deviation.
+- Images processed per second.
+
+Images per second is calculated using the image count divided by the mean execution time.
+
+Compare results using the same machine, Node.js version, and filesystem.
+
+Synthetic fixtures are stored in temporary directories and removed after execution.
+
+Memory measurements are sampled, so short-lived peaks may not be captured. RSS also includes native allocations.
+
+---
+
+## Code Scanning
+
+GitHub CodeQL performs static security analysis of JavaScript code.
+
+The workflow runs on pushes to `main` and pull requests, after the test matrix passes.
+
+### Configuration
+
+- Uses GitHub Actions.
+- Runs once on Ubuntu.
+- Analyzes JavaScript source code.
+- Publishes security alerts in the repository's **Security → Code scanning** section.
+- Uses the workflow token for GitHub integration.
+
+This project uses CodeQL advanced setup.
+
+If default setup is enabled for the repository, disable it before enabling this workflow.
+
+Private repositories require GitHub Code Security to be enabled.
+
+See the [GitHub CodeQL advanced setup documentation](https://docs.github.com/en/code-security/how-tos/find-and-fix-code-vulnerabilities/configure-code-scanning/configuring-advanced-setup-for-code-scanning).
+
+---
+
+## Standalone Executables
+
+Touro supports standalone executable builds using Node.js 26.
+
+### Build
 
 ```sh
 npm ci
 npm run build:exe
 ```
 
-The build creates `dist-exe/touro` (`dist-exe/touro.exe` on Windows) for the current platform. The executable includes Node.js and unpacks its image runtime into the local Touro cache when it first optimizes an image. Set `CLI_EXE` to the executable path when running `npm run test:e2e` to test the binary.
+The build generates an executable for the current platform:
 
-CI runs on Linux and Windows and tests the standalone executable on Node.js 26.
+| Platform | Output |
+|---|---|
+| Linux | `dist-exe/touro` |
+| Windows | `dist-exe/touro.exe` |
+
+### Runtime
+
+The executable includes Node.js and extracts its image runtime into the local Touro cache when an image optimization operation is first executed.
+
+### Executable Testing
+
+Set `CLI_EXE` to the executable path when running the end-to-end tests:
+
+```sh
+CLI_EXE=./dist-exe/touro npm run test:e2e
+```
+
+On Windows PowerShell:
+
+```powershell
+$env:CLI_EXE = ".\dist-exe\touro.exe"
+npm run test:e2e
+```
+
+CI builds and tests standalone executables on Linux and Windows using Node.js 26.
+
+---
+
+<p align="center">
+  <strong>Touro</strong>
+  <br />
+  <sub>Image Optimization CLI</sub>
+</p>
