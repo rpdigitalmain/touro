@@ -1,8 +1,8 @@
 import { CommanderError, InvalidArgumentError, Option } from 'commander';
-import { imageFormats } from '../lib/image-formats.js';
-import { BatchOptimizer } from '../lib/optimize-batch.js';
-import { ImageProcessor } from '../lib/optimize-image.js';
-import { createTable, displayPath, escapeControls, formatSize } from '../lib/terminal-format.js';
+import { imageFormats } from '../images/formats.js';
+import { BatchOptimizer } from '../images/batch-optimizer.js';
+import { ImageProcessor } from '../images/processor.js';
+import { createTable, displayPath, escapeControls, formatSize } from '../terminal/format.js';
 
 function parseQuality(value) {
   const quality = Number(value);

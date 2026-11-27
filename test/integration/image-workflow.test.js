@@ -3,9 +3,9 @@ import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { it } from 'node:test';
-import { writeImageOutput } from '../../src/lib/image-output.js';
-import { BatchOptimizer } from '../../src/lib/optimize-batch.js';
-import { ImageSource } from '../../src/lib/scan-images.js';
+import { writeImageOutput } from '../../src/images/output.js';
+import { BatchOptimizer } from '../../src/images/batch-optimizer.js';
+import { ImageSource } from '../../src/images/source.js';
 
 it('returns the same image record for a file and its parent directory', async (t) => {
   const root = await mkdtemp(join(tmpdir(), 'touro-image-source-'));

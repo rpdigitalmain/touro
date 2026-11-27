@@ -1,7 +1,7 @@
 import { Option } from 'commander';
-import { imageFormats } from '../lib/image-formats.js';
-import { ImageSource } from '../lib/scan-images.js';
-import { createTable, displayPath, escapeControls, formatSize } from '../lib/terminal-format.js';
+import { imageFormats } from '../images/formats.js';
+import { ImageSource } from '../images/source.js';
+import { createTable, displayPath, escapeControls, formatSize } from '../terminal/format.js';
 
 export function registerScan(program, context) {
   program

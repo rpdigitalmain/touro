@@ -1,4 +1,4 @@
-# touro
+# Touro
 
 Touro is a Node.js CLI for image optimization on Linux and Windows, written in JavaScript. Use `scan` to inventory the images in a project.
 
@@ -72,7 +72,9 @@ bin/touro.js           npm command entry point
 src/run.js             Process entry point shared by npm and the executable
 src/cli.js             Global options, command dispatch, and errors
 src/commands/          Commander subcommands registered in index.js
-src/lib/               Logging, platform paths, and package metadata
+src/images/            Image discovery, processing, and output
+src/terminal/          Logging and console formatting
+src/runtime/           Sharp loading, platform paths, and package metadata
 scripts/build-exe.mjs  Standalone executable build
 test/unit/             Isolated module tests
 test/integration/      Command dispatch and argument handling

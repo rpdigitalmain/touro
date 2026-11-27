@@ -1,5 +1,5 @@
 import { arch, platform, release } from 'node:os';
-import { appPaths } from '../lib/paths.js';
+import { appPaths } from '../runtime/paths.js';
 
 export function registerInfo(program, context) {
   program

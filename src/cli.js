@@ -1,7 +1,7 @@
 import { Command, CommanderError } from 'commander';
 import { registerCommands } from './commands/index.js';
-import { createLogger } from './lib/logger.js';
-import { readPackageInfo } from './lib/package.js';
+import { createLogger } from './terminal/logger.js';
+import { readPackageInfo } from './runtime/package-info.js';
 
 export async function main(argv) {
   const pkg = readPackageInfo();

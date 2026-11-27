@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { join } from 'node:path';
 import { describe, it } from 'node:test';
-import { appPaths } from '../../src/lib/paths.js';
+import { appPaths } from '../../src/runtime/paths.js';
 
 // path.join uses the host separator, so expectations are built with it too.
 describe('appPaths', () => {

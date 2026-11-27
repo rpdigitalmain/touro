@@ -1,6 +1,6 @@
 import { lstat, readdir, realpath } from 'node:fs/promises';
 import { basename, dirname, join, relative, resolve } from 'node:path';
-import { imageFormatFor } from './image-formats.js';
+import { imageFormatFor } from './formats.js';
 
 class ImageFile {
   #path;

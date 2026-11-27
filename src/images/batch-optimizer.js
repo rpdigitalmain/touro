@@ -1,7 +1,7 @@
 import { lstat, mkdir, realpath } from 'node:fs/promises';
 import { join, relative, resolve } from 'node:path';
-import { outputPathFor } from './image-formats.js';
-import { ImageSource } from './scan-images.js';
+import { outputPathFor } from './formats.js';
+import { ImageSource } from './source.js';
 
 async function existingStats(path) {
   try {

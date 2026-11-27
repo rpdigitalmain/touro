@@ -1,8 +1,8 @@
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { configureEncoder, isAnimatedImage } from './image-formats.js';
-import { writeImageOutput } from './image-output.js';
-import { loadSharp } from './load-sharp.js';
+import { configureEncoder, isAnimatedImage } from './formats.js';
+import { writeImageOutput } from './output.js';
+import { loadSharp } from '../runtime/load-sharp.js';
 
 export class ImageProcessor {
   #sharp;
