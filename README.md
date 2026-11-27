@@ -3,15 +3,17 @@
     src="https://pub-5cb1d207265c4c5484fbf2e19765e499.r2.dev/images/touro-banner.png"
     alt="Touro Banner"
     width="100%"
+    height="300"
   />
 </p>
 
 # Touro
 
 ![Node.js](https://img.shields.io/badge/Node.js-24%20%7C%2026-339933?logo=node.js&logoColor=white)
-![JavaScript](https://img.shields.io/badge/JavaScript-ES6%2B-F7DF1E?logo=javascript&logoColor=black)
 ![Platforms](https://img.shields.io/badge/platforms-Linux%20%7C%20Windows-555555)
 ![CLI](https://img.shields.io/badge/type-CLI-222222)
+[![License](https://img.shields.io/github/license/OWNER/touro?color=blue)](LICENSE)
+[![CI](https://github.com/OWNER/touro/actions/workflows/ci.yml/badge.svg)](https://github.com/OWNER/touro/actions/workflows/ci.yml)
 
 Touro is a Node.js CLI for image optimization on Linux and Windows, written in JavaScript. Use `scan` to inventory the images in a project.
 
