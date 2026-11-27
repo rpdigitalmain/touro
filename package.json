@@ -1,22 +1,43 @@
+
 {
   "name": "touro",
-  "version": "0.1.0",
-  "description": "An image optimization CLI for Linux and Windows",
+  "version": "0.0.0",
+  "description": "A cross-platform Node.js CLI for optimizing JPEG, PNG, and WebP images in place.",
   "type": "module",
+
   "bin": {
-    "touro": "bin/touro.js"
+    "touro": "./bin/touro.js"
   },
+
   "files": [
-    "bin",
-    "src"
+    "bin/",
+    "src/"
   ],
+
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rpdigitalmain/touro.git"
+  },
+
+  "homepage": "https://github.com/rpdigitalmain/touro#readme",
+
+  "bugs": {
+    "url": "https://github.com/rpdigitalmain/touro/issues"
+  },
+
   "engines": {
     "node": "24.x || 26.x"
   },
+
   "os": [
     "linux",
     "win32"
   ],
+
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/"
+  },
+
   "scripts": {
     "dev": "node bin/touro.js",
     "lint": "eslint . --max-warnings=0",
@@ -29,16 +50,29 @@
     "test:integration": "vitest run test/integration",
     "test:e2e": "vitest run test/e2e",
     "bench": "node test/performance/run.mjs",
-    "build:exe": "node scripts/build-exe.mjs"
+    "build:exe": "node scripts/build-exe.mjs",
+    "pack:check": "npm pack --dry-run",
+    "prepublishOnly": "npm run lint && npm test"
   },
+
   "keywords": [
-    "cli"
+    "cli",
+    "command-line",
+    "image",
+    "image-optimization",
+    "image-compression",
+    "jpeg",
+    "png",
+    "webp"
   ],
+
   "license": "MIT",
+
   "dependencies": {
     "commander": "^14.0.3",
     "sharp": "^0.35.5"
   },
+
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "esbuild": "^0.28.2",

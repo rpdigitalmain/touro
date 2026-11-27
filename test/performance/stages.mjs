@@ -5,7 +5,8 @@ import { OPTIMIZATION_QUALITY } from '../../src/constants/images.js';
 import { configureEncoder, imageFormatFor } from '../../src/images/formats.js';
 import { replaceImage } from '../../src/images/replace.js';
 
-export async function addStageBenchmarks(bench, workloads, batches) {
+export async function createStageScenarios(batches) {
+  const scenarios = [];
   for (const batch of batches) {
     const [filename] = await readdir(batch.template);
     const source = join(batch.template, filename);
@@ -44,9 +45,8 @@ export async function addStageBenchmarks(bench, workloads, batches) {
     }
 
     for (const { label, bytes, run, beforeEach } of stages) {
-      const name = `${label} ${batch.name}`;
-      workloads.set(name, { count: 1, bytes });
-      bench.add(name, run, { async: true, beforeEach });
+      scenarios.push({ name: `${label} ${batch.name}`, count: 1, bytes, run, beforeEach });
     }
   }
+  return scenarios;
 }

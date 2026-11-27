@@ -22,6 +22,12 @@
   <a href="https://github.com/rpdigitalmain/touro/actions/workflows/ci.yml"><img src="https://github.com/rpdigitalmain/touro/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
 </p>
 
+<p align="center">
+  🇧🇷 <strong>Proudly made in Brazil.</strong>
+  <br />
+  <sub>Touro is a Brazilian image optimization CLI, built in Brazil.</sub>
+</p>
+
 ---
 
 ## Overview
