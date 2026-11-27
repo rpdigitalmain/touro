@@ -1,0 +1,9 @@
+node_modules/
+coverage/
+*.tgz
+*.log
+.DS_Store
+Thumbs.db
+.env
+dist-exe/
+build/

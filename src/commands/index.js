@@ -1,0 +1,8 @@
+import { registerGreet } from './greet.js';
+import { registerInfo } from './info.js';
+
+/** Register new commands here; order controls `--help` output. */
+export function registerCommands(program, context) {
+  registerGreet(program, context);
+  registerInfo(program, context);
+}

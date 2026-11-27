@@ -1,0 +1,39 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        node: [22, 24]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      # Smoke-test the packed tarball the way users will install it.
+      - name: Install packed CLI globally
+        shell: bash
+        run: |
+          npm pack
+          npm install -g ./touro-*.tgz
+          touro --version
+          touro greet CI
+          touro info
+      # Build and test standalone executables with Node 24.
+      - name: Build and test standalone executable
+        if: matrix.node == 24
+        shell: bash
+        run: |
+          npm run build:exe
+          CLI_EXE="$PWD/dist-exe/touro$([ "$RUNNER_OS" = Windows ] && echo .exe)" npm run test:e2e
