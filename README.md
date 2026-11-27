@@ -1,33 +1,61 @@
 # touro
 
-Touro is a Node.js CLI for image optimization on Linux and Windows, written in JavaScript. The current commands, `greet` and `info`, serve as examples while image optimization is under development.
+Touro is a Node.js CLI for image optimization on Linux and Windows, written in JavaScript. Use `scan` to inventory the images in a project.
 
-## Getting started
+## Local installation
 
-Use Node.js 22 or later.
+Use Node.js 22 or later and run the commands below from the root of your local Touro checkout.
+
+### Windows (PowerShell)
+
+```powershell
+npm ci
+npm run dev -- --help
+npm run dev -- scan "C:\path\to\images" --format webp
+```
+
+To make the CLI available from other directories, link it locally.
+
+```powershell
+npm link
+touro --version
+touro scan "C:\path\to\images"
+```
+
+If PowerShell blocks the `.ps1` launchers, use `npm.cmd` and `touro.cmd`.
+
+### Linux
 
 ```sh
 npm ci
 npm run dev -- --help
-npm run dev -- greet Ada --shout
-npm run dev -- info --json
-npm test
-npm link
-touro --version
+npm run dev -- scan ./assets --format webp
 ```
 
-The CLI and tests run directly from the source files. Commander handles command registration, argument parsing, and generated help.
+To make the CLI available from other directories, link it locally.
+
+```sh
+npm link
+touro --version
+touro scan ./assets
+```
+
+Replace the example image path with the directory you want to scan. After linking, `touro scan` scans your current directory. The command links to your checkout and uses its source files directly.
 
 ## Usage
 
 ```sh
 touro --help
+touro scan
+touro scan ./assets --format webp
 touro greet Ada --shout --times 2
 touro greet --help
 touro info --json
 ```
 
 Use `--verbose` for debug output and `--no-color` to disable colored diagnostics. Results go to stdout and diagnostics go to stderr. Exit codes are `0` for success, `1` for failure or an unknown command, and `2` for invalid arguments or options.
+
+`touro scan [path]` defaults to the current directory. It lists relative paths, formats, and file sizes for `.jpg`, `.jpeg`, `.png`, and `.webp` files, including uppercase extensions. It searches subdirectories, skips symbolic links, and reports the image count and total size. Format detection is based on the file extension.
 
 ## Project layout
 

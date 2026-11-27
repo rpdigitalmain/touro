@@ -14,3 +14,4 @@ Touro follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and uses
 - Separate unit, integration, and end-to-end test suites.
 - CI on Linux and Windows with Node.js 22 and 24.
 - Weekly Dependabot updates for npm dependencies and GitHub Actions.
+- Recursive `scan` command with an optional format filter, file sizes, and aggregate totals.
