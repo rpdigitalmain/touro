@@ -1,4 +1,4 @@
-import { TouroError } from '../shared/errors.js';
+import { TouroError } from '../errors/errors.js';
 
 export const IMAGE_ERROR = Object.freeze({
   INVALID_SOURCE: 'touro.image.invalidSource',

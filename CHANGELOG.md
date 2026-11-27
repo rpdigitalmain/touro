@@ -9,7 +9,7 @@ Touro follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and uses
 
 ### Added
 
-- JavaScript CLI for Linux and Windows with Commander, generated help, and the `greet` and `info` commands.
+- JavaScript CLI for Linux and Windows with Commander, generated help, and the `info` command.
 - Standalone executable builds for Linux and Windows.
 - Separate unit, integration, and end-to-end test suites.
 - CI on Linux and Windows with Node.js 24 and 26.

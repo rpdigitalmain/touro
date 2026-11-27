@@ -2,9 +2,9 @@ import { lstat } from 'node:fs/promises';
 import { join } from 'node:path';
 import { outputPathFor } from './formats.js';
 import { ImageSource } from './source.js';
-import { DEFAULT_SOURCE, PLATFORM } from '../shared/constants/application.js';
-import { IMAGE_STATUS, OPTIMIZATION_QUALITY } from '../shared/constants/images.js';
-import { TouroError } from '../shared/errors.js';
+import { DEFAULT_SOURCE, PLATFORM } from '../constants/application.js';
+import { IMAGE_STATUS, OPTIMIZATION_QUALITY } from '../constants/images.js';
+import { TouroError } from '../errors/errors.js';
 import { IMAGE_ERROR, targetExistsError } from './errors.js';
 
 async function targetExists(path) {

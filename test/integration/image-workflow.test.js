@@ -1,17 +1,16 @@
 import assert from 'node:assert/strict';
-import { lstat, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
+import { lstat, readFile, readdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { it } from 'node:test';
+import { it } from 'vitest';
 import { replaceImage } from '../../src/images/replace.js';
 import { BatchOptimizer } from '../../src/images/batch-optimizer.js';
 import { ImageSource } from '../../src/images/source.js';
 import { IMAGE_ERROR } from '../../src/images/errors.js';
-import { TouroError } from '../../src/shared/errors.js';
+import { TouroError } from '../../src/errors/errors.js';
+import { createTemporaryDirectory } from '../shared/temporary-directory.js';
 
 it('returns the same image record for a file and its parent directory', async (t) => {
-  const root = await mkdtemp(join(tmpdir(), 'touro-image-source-'));
-  t.after(() => rm(root, { recursive: true, force: true }));
+  const root = await createTemporaryDirectory(t, 'touro-image-source-');
   const image = join(root, 'cover.JPG');
   await writeFile(image, 'abc');
 
@@ -26,8 +25,7 @@ it('returns the same image record for a file and its parent directory', async (t
 });
 
 it('preserves both paths and removes the temporary file when publication collides', async (t) => {
-  const root = await mkdtemp(join(tmpdir(), 'touro-image-output-'));
-  t.after(() => rm(root, { recursive: true, force: true }));
+  const root = await createTemporaryDirectory(t, 'touro-image-output-');
   const source = join(root, 'cover.png');
   const target = join(root, 'cover.webp');
   const original = Buffer.from('original');
@@ -48,8 +46,7 @@ it('preserves both paths and removes the temporary file when publication collide
 });
 
 it('keeps a source edited during encoding and cleans up the temporary file', async (t) => {
-  const root = await mkdtemp(join(tmpdir(), 'touro-image-replace-'));
-  t.after(() => rm(root, { recursive: true, force: true }));
+  const root = await createTemporaryDirectory(t, 'touro-image-replace-');
   const source = join(root, 'cover.png');
   await writeFile(source, 'original');
   const stats = await lstat(source, { bigint: true });
@@ -64,8 +61,7 @@ it('keeps a source edited during encoding and cleans up the temporary file', asy
 });
 
 it('plans a batch and aggregates results with an injected processor', async (t) => {
-  const root = await mkdtemp(join(tmpdir(), 'touro-image-batch-'));
-  t.after(() => rm(root, { recursive: true, force: true }));
+  const root = await createTemporaryDirectory(t, 'touro-image-batch-');
   for (const name of ['cover.jpg', 'cover.png', 'hero.jpeg', 'icon.png']) {
     await writeFile(join(root, name), 'abc');
   }

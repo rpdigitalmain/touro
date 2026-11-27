@@ -1,7 +1,7 @@
 import { homedir } from 'node:os';
 import { join } from 'node:path';
-import { PLATFORM, UNSUPPORTED_PLATFORM } from '../shared/constants/application.js';
-import { TouroError } from '../shared/errors.js';
+import { PLATFORM, UNSUPPORTED_PLATFORM } from '../constants/application.js';
+import { TouroError } from '../errors/errors.js';
 
 /**
  * Per-user directories following each platform's conventions:

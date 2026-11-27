@@ -3,8 +3,8 @@ import { join } from 'node:path';
 import { configureEncoder, isAnimatedImage } from './formats.js';
 import { replaceImage } from './replace.js';
 import { loadSharp } from '../runtime/load-sharp.js';
-import { IMAGE_STATUS } from '../shared/constants/images.js';
-import { INFRASTRUCTURE_ERROR, TouroError } from '../shared/errors.js';
+import { IMAGE_STATUS } from '../constants/images.js';
+import { INFRASTRUCTURE_ERROR, TouroError } from '../errors/errors.js';
 import { IMAGE_ERROR } from './errors.js';
 
 export class ImageProcessor {

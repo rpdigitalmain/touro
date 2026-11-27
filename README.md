@@ -91,18 +91,20 @@ src/images/            Image discovery, encoding, and file replacement
 src/terminal/          Logging and shared console formatting
 src/terminal/presenters/  Optimization and scan reports
 src/runtime/           Sharp loading, platform paths, and package metadata
-src/shared/constants/  Shared application and image definitions
+src/constants/         Shared application and image definitions
+src/errors/            Shared error model and cleanup handling
 scripts/build-exe.mjs  Standalone executable build
 test/unit/             Isolated module tests
 test/integration/      Command dispatch and argument handling
 test/e2e/               CLI invoked as a separate process
+test/shared/            Reusable test helpers
 ```
 
 ## Development checks
 
 `npm run lint` checks the JavaScript source, scripts, and tests. Use `npm run lint:fix` to apply automatic fixes.
 
-`npm test` runs all tests. Run a single group with `npm run test:unit`, `npm run test:integration`, or `npm run test:e2e`.
+`npm test` runs all tests once with Vitest. Run a single group with `npm run test:unit`, `npm run test:integration`, or `npm run test:e2e`. Use `npm run test:watch` for interactive development.
 
 `npm run audit:deps` checks `package-lock.json` against the npm registry for known vulnerabilities in runtime and development dependencies. It reports all severities and fails on high or critical findings. CI runs this check on pushes to `main` and `develop`, and on pull requests.
 

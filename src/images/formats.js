@@ -1,5 +1,5 @@
 import { extname } from 'node:path';
-import { IMAGE_EXTENSIONS, IMAGE_FORMAT } from '../shared/constants/images.js';
+import { IMAGE_EXTENSIONS, IMAGE_FORMAT } from '../constants/images.js';
 
 function isAnimatedPng(bytes) {
   // APNG signals animation with an acTL chunk before the first image data chunk.
@@ -37,7 +37,7 @@ const formatsByExtension = new Map(Object.entries(IMAGE_EXTENSIONS).flatMap(([na
   extensions.map((extension) => [extension, name]),
 ));
 
-export { IMAGE_FORMATS as imageFormats } from '../shared/constants/images.js';
+export { IMAGE_FORMATS as imageFormats } from '../constants/images.js';
 
 export function imageFormatFor(path) {
   return formatsByExtension.get(extname(path).toLowerCase());

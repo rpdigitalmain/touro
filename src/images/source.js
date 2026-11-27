@@ -2,7 +2,7 @@ import { lstat, readdir, realpath } from 'node:fs/promises';
 import { basename, dirname, join, relative, resolve } from 'node:path';
 import { imageFormatFor } from './formats.js';
 import { IMAGE_ERROR } from './errors.js';
-import { TouroError } from '../shared/errors.js';
+import { TouroError } from '../errors/errors.js';
 
 const excludedDirectories = new Set(['node_modules', 'bower_components', 'vendor', 'build', 'dist', 'dist-exe']);
 

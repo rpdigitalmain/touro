@@ -1,5 +1,5 @@
 import { displayPath, formatPercent, formatSize, writeTable } from '../format.js';
-import { IMAGE_STATUS } from '../../shared/constants/images.js';
+import { IMAGE_STATUS } from '../../constants/images.js';
 import { presentImageFailure } from './errors.js';
 
 const columns = [

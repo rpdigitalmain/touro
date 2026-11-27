@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
-import { it } from 'node:test';
-import { INFRASTRUCTURE_ERROR, rethrowAfterCleanup, TouroError } from '../../src/shared/errors.js';
+import { it } from 'vitest';
+import { INFRASTRUCTURE_ERROR, rethrowAfterCleanup, TouroError } from '../../src/errors/errors.js';
 import { createLogger } from '../../src/terminal/logger.js';
 import { presentImageFailure } from '../../src/terminal/presenters/errors.js';
 

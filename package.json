@@ -13,17 +13,21 @@
   "engines": {
     "node": "24.x || 26.x"
   },
-  "os": ["linux", "win32"],
+  "os": [
+    "linux",
+    "win32"
+  ],
   "scripts": {
     "dev": "node bin/touro.js",
     "lint": "eslint . --max-warnings=0",
     "lint:fix": "npm run lint -- --fix",
     "audit:deps": "npm audit --package-lock-only --include=dev --audit-level=high",
     "clean": "node --input-type=module -e \"import { rmSync } from 'node:fs'; for (const directory of ['dist-exe', 'build']) rmSync(directory, { recursive: true, force: true })\"",
-    "test": "node --test",
-    "test:unit": "node --test \"test/unit/**/*.test.js\"",
-    "test:integration": "node --test \"test/integration/**/*.test.js\"",
-    "test:e2e": "node --test \"test/e2e/**/*.test.js\"",
+    "test": "vitest run",
+    "test:watch": "vitest watch",
+    "test:unit": "vitest run test/unit",
+    "test:integration": "vitest run test/integration",
+    "test:e2e": "vitest run test/e2e",
     "build:exe": "node scripts/build-exe.mjs"
   },
   "keywords": [
@@ -38,6 +42,7 @@
     "@eslint/js": "^10.0.1",
     "esbuild": "^0.28.2",
     "eslint": "^10.15.0",
-    "globals": "^17.14.0"
+    "globals": "^17.14.0",
+    "vitest": "^5.1.2"
   }
 }

@@ -1,8 +1,8 @@
 import { Option } from 'commander';
-import { DEFAULT_SOURCE, OPERATION_FAILED } from '../shared/constants/application.js';
-import { IMAGE_FORMATS } from '../shared/constants/images.js';
+import { DEFAULT_SOURCE, OPERATION_FAILED } from '../constants/application.js';
+import { IMAGE_FORMATS } from '../constants/images.js';
 import { ImageSource } from '../images/source.js';
-import { TouroError } from '../shared/errors.js';
+import { TouroError } from '../errors/errors.js';
 import { presentScan } from '../terminal/presenters/inventory.js';
 
 export function registerScan(program, context) {

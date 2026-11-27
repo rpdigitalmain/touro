@@ -1,8 +1,8 @@
 import { randomUUID } from 'node:crypto';
 import { link, lstat, open, rename, unlink } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
-import { PLATFORM } from '../shared/constants/application.js';
-import { rethrowAfterCleanup, TouroError } from '../shared/errors.js';
+import { PLATFORM } from '../constants/application.js';
+import { rethrowAfterCleanup, TouroError } from '../errors/errors.js';
 import { IMAGE_ERROR, targetExistsError } from './errors.js';
 
 async function checkSource(source, original) {

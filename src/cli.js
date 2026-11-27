@@ -2,8 +2,8 @@ import { Command, CommanderError } from 'commander';
 import { registerCommands } from './commands/index.js';
 import { createLogger } from './terminal/logger.js';
 import { readPackageInfo } from './runtime/package-info.js';
-import { EXIT_CODE, PARTIAL_FAILURE, UNSUPPORTED_PLATFORM } from './shared/constants/application.js';
-import { TouroError } from './shared/errors.js';
+import { EXIT_CODE, PARTIAL_FAILURE, UNSUPPORTED_PLATFORM } from './constants/application.js';
+import { TouroError } from './errors/errors.js';
 import { presentError } from './terminal/presenters/errors.js';
 
 function handleCliError(logger, error) {

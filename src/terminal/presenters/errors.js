@@ -1,6 +1,6 @@
 import { IMAGE_ERROR } from '../../images/errors.js';
-import { OPERATION_FAILED, UNSUPPORTED_PLATFORM } from '../../shared/constants/application.js';
-import { INFRASTRUCTURE_ERROR, TouroError } from '../../shared/errors.js';
+import { OPERATION_FAILED, UNSUPPORTED_PLATFORM } from '../../constants/application.js';
+import { INFRASTRUCTURE_ERROR, TouroError } from '../../errors/errors.js';
 import { displayPath, escapeControls } from '../format.js';
 
 const unexpected = 'an unexpected error occurred. Rerun with --verbose for details.';

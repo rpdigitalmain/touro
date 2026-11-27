@@ -1,11 +1,11 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdir, mkdtemp, readFile, readdir, rm, symlink, writeFile } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
+import { mkdir, readFile, readdir, symlink, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { describe, it } from 'node:test';
+import { describe, it } from 'vitest';
 import sharp from 'sharp';
+import { createTemporaryDirectory } from '../shared/temporary-directory.js';
 
 // Set CLI_EXE to a standalone executable (npm run build:exe) to test it instead.
 const exe = process.env.CLI_EXE ? resolve(process.env.CLI_EXE) : undefined;
@@ -48,12 +48,13 @@ describe('cli', () => {
     assert.match(stdout, /--quality/);
     assert.doesNotMatch(stdout, /--output/);
     assert.match(stdout, /Commands:/);
-    assert.match(stdout, /greet/);
+    assert.match(stdout, /\bscan\b/);
+    assert.match(stdout, /\boptimize\b/);
+    assert.doesNotMatch(stdout, /\bgreet\b|\bhello\b/);
   });
 
   it('reports an empty optimization run without arguments', async (t) => {
-    const root = await mkdtemp(join(tmpdir(), 'touro-empty-'));
-    t.after(() => rm(root, { recursive: true, force: true }));
+    const root = await createTemporaryDirectory(t, 'touro-empty-');
     const result = runIn(root);
     assert.equal(result.code, 0, result.stderr);
     assert.equal(result.stdout, [
@@ -66,14 +67,16 @@ describe('cli', () => {
     assert.deepEqual(await readdir(root), []);
   });
 
-  it('runs a command with options', () => {
-    const { code, stdout } = run('greet', 'Ada', '--shout', '-t', '2');
-    assert.equal(code, 0);
-    assert.equal(stdout, 'HELLO, ADA!\nHELLO, ADA!\n');
+  it('rejects the retired greeting command and alias', () => {
+    for (const name of ['greet', 'hello']) {
+      const { code, stderr } = run(name);
+      assert.equal(code, 1);
+      assert.match(stderr, /unknown command/i);
+    }
   });
 
   it('reports unknown options with exit code 2', () => {
-    const { code, stderr } = run('greet', '--bogus');
+    const { code, stderr } = run('info', '--bogus');
     assert.equal(code, 2);
     assert.match(stderr, /bogus/);
     assert.equal(run('--output', 'obsolete').code, 2);
@@ -92,8 +95,7 @@ describe('cli', () => {
 
 describe('scan', () => {
   it('scans the current directory recursively and filters by format', async (t) => {
-    const root = await mkdtemp(join(tmpdir(), 'touro-scan-'));
-    t.after(() => rm(root, { recursive: true, force: true }));
+    const root = await createTemporaryDirectory(t, 'touro-scan-');
     const nested = join(root, 'client assets', 'gallery');
     await mkdir(nested, { recursive: true });
     await writeFile(join(root, 'cover.JPG'), '123');
@@ -120,8 +122,7 @@ describe('scan', () => {
   });
 
   it('returns an empty summary or a clear error for an invalid input', async (t) => {
-    const root = await mkdtemp(join(tmpdir(), 'touro-scan-'));
-    t.after(() => rm(root, { recursive: true, force: true }));
+    const root = await createTemporaryDirectory(t, 'touro-scan-');
 
     const empty = run('scan', root);
     assert.equal(empty.code, 0, empty.stderr);
@@ -148,8 +149,7 @@ describe('scan', () => {
 
 describe('optimize', () => {
   it('reports colliding destinations before reading image contents and processes the rest', async (t) => {
-    const root = await mkdtemp(join(tmpdir(), 'touro-optimize-'));
-    t.after(() => rm(root, { recursive: true, force: true }));
+    const root = await createTemporaryDirectory(t, 'touro-optimize-');
     await writeFile(join(root, 'cover.jpg'), 'invalid');
     await writeFile(join(root, 'cover.png'), 'invalid');
     await sharp({
@@ -166,8 +166,7 @@ describe('optimize', () => {
   });
 
   it('converts a nested image in its directory and reports its new path and sizes', async (t) => {
-    const root = await mkdtemp(join(tmpdir(), 'touro-optimize-'));
-    t.after(() => rm(root, { recursive: true, force: true }));
+    const root = await createTemporaryDirectory(t, 'touro-optimize-');
     const nested = join(root, 'assets');
     await mkdir(nested);
     const name = 'a long image filename that extends beyond a typical terminal width';
@@ -200,8 +199,7 @@ describe('optimize', () => {
   });
 
   it('optimizes in place recursively, skipping internal directories and preserving invalid files', async (t) => {
-    const root = await mkdtemp(join(tmpdir(), 'touro-optimize-'));
-    t.after(() => rm(root, { recursive: true, force: true }));
+    const root = await createTemporaryDirectory(t, 'touro-optimize-');
     const nested = join(root, 'assets', 'nested');
     await mkdir(nested, { recursive: true });
     const original = await sharp({

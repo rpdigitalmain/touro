@@ -8,7 +8,7 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync
 import { dirname, join, resolve, sep } from 'node:path';
 import { Command } from 'commander';
 import { build } from 'esbuild';
-import { EXIT_CODE, PLATFORM } from '../src/shared/constants/application.js';
+import { EXIT_CODE, PLATFORM } from '../src/constants/application.js';
 
 const root = resolve(import.meta.dirname, '..');
 const pkg = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'));

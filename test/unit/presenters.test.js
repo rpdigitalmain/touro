@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
-import { it } from 'node:test';
+import { it } from 'vitest';
 import { presentScan } from '../../src/terminal/presenters/inventory.js';
 import { presentOptimization } from '../../src/terminal/presenters/optimization.js';
 import { IMAGE_ERROR } from '../../src/images/errors.js';
-import { TouroError } from '../../src/shared/errors.js';
+import { TouroError } from '../../src/errors/errors.js';
 
 it('widens the scan size column to align values and preserve full paths', () => {
   const lines = [];

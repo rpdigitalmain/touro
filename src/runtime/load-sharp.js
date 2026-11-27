@@ -4,7 +4,7 @@ import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 import * as sea from 'node:sea';
 import { appPaths } from './paths.js';
-import { INFRASTRUCTURE_ERROR, rethrowAfterCleanup, TouroError } from '../shared/errors.js';
+import { INFRASTRUCTURE_ERROR, rethrowAfterCleanup, TouroError } from '../errors/errors.js';
 
 export async function loadSharp() {
   if (!sea.isSea()) return (await import('sharp')).default;
