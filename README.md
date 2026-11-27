@@ -1,9 +1,9 @@
- <p align="center">
+<p align="center">
   <img
     src="https://pub-5cb1d207265c4c5484fbf2e19765e499.r2.dev/images/touro-banner.png"
     alt="Touro Banner"
     width="100%"
-    height="300"
+    style="max-height: 300px; object-fit: cover;"
   />
 </p>
 
@@ -12,8 +12,8 @@
 ![Node.js](https://img.shields.io/badge/Node.js-24%20%7C%2026-339933?logo=node.js&logoColor=white)
 ![Platforms](https://img.shields.io/badge/platforms-Linux%20%7C%20Windows-555555)
 ![CLI](https://img.shields.io/badge/type-CLI-222222)
-[![License](https://img.shields.io/github/license/OWNER/touro?color=blue)](LICENSE)
-[![CI](https://github.com/OWNER/touro/actions/workflows/ci.yml/badge.svg)](https://github.com/OWNER/touro/actions/workflows/ci.yml)
+[![License](https://img.shields.io/github/license/rpdigitalmain/touro?color=blue)](LICENSE)
+[![CI](https://github.com/rpdigitalmain/touro/actions/workflows/ci.yml/badge.svg)](https://github.com/rpdigitalmain/touro/actions/workflows/ci.yml)
 
 Touro is a Node.js CLI for image optimization on Linux and Windows, written in JavaScript. Use `scan` to inventory the images in a project.
 
@@ -44,7 +44,7 @@ If PowerShell blocks the `.ps1` launchers, use `npm.cmd` and `touro.cmd`.
 ```sh
 npm ci
 npm run dev -- --help
-npm run dev -- scan ./assets --format webp
+npm run dev -- scan ./assets
 ```
 
 To make the CLI available from other directories, link it locally.
@@ -62,11 +62,9 @@ Replace the example image path with the directory you want to scan. After linkin
 ```sh
 touro --help
 touro scan
-touro scan ./assets --format webp
+touro scan ./assets
 touro optimize ./assets
 touro optimize ./assets --format webp --output ./optimized
-touro greet Ada --shout --times 2
-touro greet --help
 touro info --json
 ```
 
@@ -86,7 +84,7 @@ The result table shows original and final sizes, bytes saved, and percentage cha
 bin/touro.js           npm command entry point
 src/run.js             Process entry point shared by npm and the executable
 src/cli.js             Global options, command dispatch, and errors
-src/commands/          Commander subcommands registered in index.js
+src/commands/          Commander subcommands and registration
 src/images/            Image discovery, processing, and output
 src/terminal/          Logging and console formatting
 src/runtime/           Sharp loading, platform paths, and package metadata
