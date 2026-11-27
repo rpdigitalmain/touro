@@ -15,14 +15,18 @@ class ImageFile {
     this.#knownStats = knownStats;
   }
 
-  async *images(root, { format }) {
+  async *images(root, { format, includeSize = true }) {
     const imageFormat = imageFormatFor(this.#path);
     if (!imageFormat || (format && format !== imageFormat)) return;
 
-    const stats = this.#knownStats ?? await lstat(this.#path);
-    if (stats.isFile()) {
-      yield { path: relative(root, this.#path), format: imageFormat, size: stats.size };
+    const image = { path: relative(root, this.#path), format: imageFormat };
+    if (!includeSize) {
+      yield image;
+      return;
     }
+
+    const stats = this.#knownStats ?? await lstat(this.#path);
+    if (stats.isFile()) yield { ...image, size: stats.size };
   }
 }
 

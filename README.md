@@ -110,6 +110,17 @@ test/shared/            Reusable test helpers
 
 `npm run audit:deps` checks `package-lock.json` against the npm registry for known vulnerabilities in runtime and development dependencies. It reports all severities and fails on high or critical findings. CI runs this check on pushes to `main` and `develop`, and on pull requests.
 
+## Performance benchmarks
+
+Run `npm run bench` with Node.js 24 or 26. The [Performance workflow](.github/workflows/performance.yml) also runs on demand in GitHub Actions and on Mondays at 04:23 UTC. Benchmarks are separate from `npm test` and publish measurements without enforcing performance thresholds.
+
+- **Startup** launches a fresh Node.js process for each `--help` and `--version` sample.
+- **Discovery** scans nested trees of 100, 500, and 2,000 images. The largest case compares path-only discovery used by optimization with discovery that reads file sizes for `scan`.
+- **Optimization** runs the CLI's batch optimizer for JPEG, PNG, and WebP at 256×256 and 1,024×1,024. Each sample processes three images. Fixture generation and restoration run outside the timed samples. The large-image cases also measure reading, encoding (including metadata), and atomic replacement separately.
+- **Concurrency and memory** compare one and two simultaneous optimization runs on two independent folders with 48 images combined. A separate phase samples RSS and V8 heap every 10 ms for discovery and three rounds per concurrency level. Compare the start and end of each round to spot sustained growth. Sampled peaks can miss shorter spikes, and RSS includes native allocations. The CLI processes its own batches sequentially.
+
+Tinybench warms up each scenario and reports the mean, median, and standard deviation in milliseconds. Images per second uses the image count divided by the mean duration. Compare the same scenarios on the same machine, Node.js version, and filesystem. Synthetic fixtures live in a temporary directory that is removed when the run ends.
+
 ## Code scanning
 
 GitHub CodeQL scans JavaScript on pushes to `main` and on pull requests after the test matrix passes. It runs once on Ubuntu and publishes alerts under **Code scanning** in the **Security** tab using the workflow token.

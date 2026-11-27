@@ -20,6 +20,9 @@ it('returns the same image record for a file and its parent directory', async (t
   assert.equal(file.root, directory.root);
   assert.deepEqual(await file.listImages({ format: 'jpeg' }), records);
   assert.deepEqual(await directory.listImages({ format: 'jpeg' }), records);
+  const pathsOnly = [{ path: 'cover.JPG', format: 'jpeg' }];
+  assert.deepEqual(await file.listImages({ includeSize: false }), pathsOnly);
+  assert.deepEqual(await directory.listImages({ includeSize: false }), pathsOnly);
   assert.deepEqual(await file.listImages({ format: 'png' }), []);
   assert.deepEqual(await directory.listImages({ format: 'png' }), []);
 });
@@ -70,6 +73,7 @@ it('plans a batch and aggregates results with an injected processor', async (t) 
   const encoderError = new Error('Test encoder failed.');
   const optimizer = new BatchOptimizer(async () => ({
     async optimize(_root, job) {
+      assert.equal('size' in job.image, false);
       processed.push(job.targetPath);
       if (job.image.path === 'icon.png') throw encoderError;
       return { status: 'converted', originalSize: 3, finalSize: 2 };

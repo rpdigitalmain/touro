@@ -27,7 +27,7 @@ export class BatchOptimizer {
   async run(path = DEFAULT_SOURCE, { format, quality = OPTIMIZATION_QUALITY.DEFAULT } = {}) {
     const source = await ImageSource.open(path, { allowFile: true });
     const { root } = source;
-    const images = await source.listImages();
+    const images = await source.listImages({ includeSize: false });
     const destinations = new Map();
     for (const image of images) {
       const outputFormat = format ?? image.format;

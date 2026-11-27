@@ -28,6 +28,7 @@
     "test:unit": "vitest run test/unit",
     "test:integration": "vitest run test/integration",
     "test:e2e": "vitest run test/e2e",
+    "bench": "node test/performance/run.mjs",
     "build:exe": "node scripts/build-exe.mjs"
   },
   "keywords": [
@@ -43,6 +44,7 @@
     "esbuild": "^0.28.2",
     "eslint": "^10.15.0",
     "globals": "^17.14.0",
+    "tinybench": "^6.2.5",
     "vitest": "^5.1.2"
   }
 }
