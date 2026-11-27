@@ -1,22 +1,6 @@
-import { sep } from 'node:path';
 import { Option } from 'commander';
 import { imageFormats, scanImages } from '../lib/scan-images.js';
-
-function formatSize(bytes) {
-  const units = ['B', 'KB', 'MB', 'GB', 'TB'];
-  let unit = 0;
-  while (bytes >= 1000 && unit < units.length - 1) {
-    bytes /= 1000;
-    unit += 1;
-  }
-  return unit === 0 ? `${bytes} B` : `${bytes.toFixed(2)} ${units[unit]}`;
-}
-
-function escapeControls(text) {
-  return text.replace(/[\p{Cc}\p{Cf}\p{Zl}\p{Zp}]/gu, (char) =>
-    `\\u{${char.codePointAt(0).toString(16)}}`,
-  );
-}
+import { displayPath, escapeControls, formatSize } from '../lib/terminal-format.js';
 
 export function registerScan(program, context) {
   program
@@ -30,7 +14,7 @@ export function registerScan(program, context) {
         images = await scanImages(path, format);
       } catch (error) {
         command.error(`error: Could not scan "${escapeControls(path)}". ${escapeControls(error.message)}`, {
-          code: 'touro.scanFailed',
+          code: 'touro.operationFailed',
         });
       }
 
@@ -41,7 +25,7 @@ export function registerScan(program, context) {
         totalSize += image.size;
         const format = image.format.toUpperCase().padEnd(8);
         const size = formatSize(image.size).padEnd(12);
-        const path = escapeControls(image.path.split(sep).join('/'));
+        const path = displayPath(image.path);
         logger.out(`${format}${size}${path}`);
       }
 

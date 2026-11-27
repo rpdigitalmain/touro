@@ -28,7 +28,8 @@
   ],
   "license": "MIT",
   "dependencies": {
-    "commander": "^14.0.3"
+    "commander": "^14.0.3",
+    "sharp": "^0.35.5"
   },
   "devDependencies": {
     "esbuild": "^0.28.2",

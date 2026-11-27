@@ -1,13 +1,14 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdir, mkdtemp, rm, symlink, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, readdir, rm, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, it } from 'node:test';
+import sharp from 'sharp';
 
 // Set CLI_EXE to a standalone executable (npm run build:exe) to test it instead.
-const exe = process.env.CLI_EXE;
+const exe = process.env.CLI_EXE ? resolve(process.env.CLI_EXE) : undefined;
 const cli = fileURLToPath(new URL('../../bin/touro.js', import.meta.url));
 
 /** Runs the CLI in a child process, exactly as a user would. */
@@ -20,7 +21,12 @@ function runIn(cwd, ...args) {
   const result = spawnSync(command, argv, {
     cwd,
     encoding: 'utf8',
-    env: { ...process.env, NO_COLOR: '1' },
+    env: {
+      ...process.env,
+      NO_COLOR: '1',
+      LOCALAPPDATA: join(cwd, '.cache'),
+      XDG_CACHE_HOME: join(cwd, '.cache'),
+    },
   });
   if (result.error) throw result.error;
   return { code: result.status, stdout: result.stdout, stderr: result.stderr };
@@ -111,5 +117,56 @@ describe('scan', () => {
     const invalid = run('scan', root, '--format', 'gif');
     assert.equal(invalid.code, 2);
     assert.match(invalid.stderr, /Allowed choices are jpeg, png, webp/);
+  });
+});
+
+describe('optimize', () => {
+  it('converts one file, preserves its original, and measures the written output', async (t) => {
+    const root = await mkdtemp(join(tmpdir(), 'touro-optimize-'));
+    t.after(() => rm(root, { recursive: true, force: true }));
+    const input = join(root, 'original.png');
+    const original = await sharp({
+      create: { width: 70, height: 70, channels: 4, background: '#ff550080' },
+    }).png().toBuffer();
+    await writeFile(input, original);
+
+    const result = runIn(root, 'optimize', input, '--format', 'webp');
+    assert.equal(result.code, 0, result.stderr);
+    assert.deepEqual(await readFile(input), original);
+    const output = await readFile(join(root, 'touro-output', 'original.webp'));
+    const metadata = await sharp(output).metadata();
+    assert.equal(metadata.format, 'webp');
+    assert.equal(metadata.hasAlpha, true);
+    assert.match(result.stdout, /FORMAT +ORIGINAL +FINAL +SAVED +CHANGE +PATH/);
+    assert.match(result.stdout, new RegExp(`PNG → WEBP +${original.length} B +${output.length} B`));
+    assert.match(result.stdout, /1 file · 1 converted · 0 optimized · 0 unchanged · 0 failed/);
+  });
+
+  it('continues after invalid images and protects existing batch outputs on retry', async (t) => {
+    const root = await mkdtemp(join(tmpdir(), 'touro-optimize-'));
+    t.after(() => rm(root, { recursive: true, force: true }));
+    const nested = join(root, 'assets', 'nested');
+    await mkdir(nested, { recursive: true });
+    const original = await sharp({
+      create: { width: 100, height: 100, channels: 3, background: '#117799' },
+    }).png({ compressionLevel: 0 }).toBuffer();
+    await writeFile(join(nested, 'photo.PNG'), original);
+    await writeFile(join(root, 'assets', 'invalid.jpg'), 'invalid');
+
+    const result = runIn(root, 'optimize', './assets');
+    assert.equal(result.code, 1);
+    assert.match(result.stderr, /Failed: invalid\.jpg/);
+    assert.match(result.stdout, /2 files · 0 converted · 1 optimized · 0 unchanged · 1 failed/);
+    const destination = join(root, 'assets', 'touro-output', 'nested');
+    const optimized = await readFile(join(destination, 'photo.PNG'));
+    assert.ok(optimized.length < original.length);
+    assert.deepEqual(await readFile(join(nested, 'photo.PNG')), original);
+
+    const retry = runIn(root, 'optimize', './assets');
+    assert.equal(retry.code, 1);
+    assert.match(retry.stdout, /2 files · 0 converted · 0 optimized · 0 unchanged · 2 failed/);
+    assert.match(retry.stderr, /Output already exists/);
+    assert.deepEqual(await readdir(destination), ['photo.PNG']);
+    assert.deepEqual(await readFile(join(destination, 'photo.PNG')), optimized);
   });
 });

@@ -10,7 +10,11 @@ const formatsByExtension = new Map([
 
 export const imageFormats = [...new Set(formatsByExtension.values())];
 
-export async function scanImages(path, format) {
+export function imageFormatFor(path) {
+  return formatsByExtension.get(extname(path).toLowerCase());
+}
+
+export async function scanImages(path, format, excludedDirectory) {
   const root = resolve(path);
   if (!(await lstat(root)).isDirectory()) {
     throw new Error('Expected a directory.');
@@ -23,11 +27,13 @@ export async function scanImages(path, format) {
     for (const entry of await readdir(directory, { withFileTypes: true })) {
       const entryPath = join(directory, entry.name);
       if (entry.isDirectory()) {
-        directories.push(entryPath);
+        if (!excludedDirectory || relative(excludedDirectory, entryPath) !== '') {
+          directories.push(entryPath);
+        }
         continue;
       }
 
-      const imageFormat = formatsByExtension.get(extname(entry.name).toLowerCase());
+      const imageFormat = imageFormatFor(entry.name);
       if (!entry.isFile() || !imageFormat || (format && format !== imageFormat)) continue;
 
       const stats = await lstat(entryPath);

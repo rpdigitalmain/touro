@@ -35,7 +35,7 @@ export async function main(argv) {
   } catch (error) {
     if (!(error instanceof CommanderError)) throw error;
     if (error.exitCode === 0) return 0;
-    if (['commander.unknownCommand', 'commander.help', 'touro.scanFailed'].includes(error.code)) return 1;
+    if (['commander.unknownCommand', 'commander.help', 'touro.operationFailed'].includes(error.code)) return 1;
     return 2;
   }
 }
