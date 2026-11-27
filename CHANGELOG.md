@@ -20,3 +20,4 @@ Touro follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and uses
 ### Changed
 
 - `optimize` detects destination conflicts before encoding and skips all inputs that share a destination.
+- Standalone builds use an ESM entry point and Node.js 26 or later.

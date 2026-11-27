@@ -1,6 +1,6 @@
 import { Option } from 'commander';
 import { imageFormats } from '../lib/image-formats.js';
-import { openImageSource } from '../lib/scan-images.js';
+import { ImageSource } from '../lib/scan-images.js';
 import { createTable, displayPath, escapeControls, formatSize } from '../lib/terminal-format.js';
 
 export function registerScan(program, context) {
@@ -12,7 +12,7 @@ export function registerScan(program, context) {
     .action(async (path, { format }, command) => {
       let images;
       try {
-        const source = await openImageSource(path);
+        const source = await ImageSource.open(path);
         images = await source.listImages({ format });
       } catch (error) {
         command.error(`error: Could not scan "${escapeControls(path)}". ${escapeControls(error.message)}`, {

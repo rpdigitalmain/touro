@@ -85,7 +85,7 @@ test/e2e/              CLI invoked as a separate process
 
 ## Standalone executables
 
-Use Node.js 24 to build the standalone executable.
+Use Node.js 26 or later to build the standalone executable.
 
 ```sh
 npm ci
@@ -94,4 +94,4 @@ npm run build:exe
 
 The build creates `dist-exe/touro` (`dist-exe/touro.exe` on Windows) for the current platform. The executable includes Node.js and unpacks its image runtime into the local Touro cache on first use of `optimize`. Set `CLI_EXE` to the executable path when running `npm run test:e2e` to test the binary.
 
-CI runs on Linux and Windows and tests the standalone executable on Node.js 24.
+CI runs on Linux and Windows and tests the standalone executable on Node.js 26.

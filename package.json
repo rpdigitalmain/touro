@@ -16,7 +16,7 @@
   "os": ["linux", "win32"],
   "scripts": {
     "dev": "node bin/touro.js",
-    "clean": "node -e \"for (const d of ['dist-exe','build']) require('node:fs').rmSync(d,{recursive:true,force:true})\"",
+    "clean": "node --input-type=module -e \"import { rmSync } from 'node:fs'; for (const directory of ['dist-exe', 'build']) rmSync(directory, { recursive: true, force: true })\"",
     "test": "node --test",
     "test:unit": "node --test \"test/unit/**/*.test.js\"",
     "test:integration": "node --test \"test/integration/**/*.test.js\"",
@@ -32,7 +32,6 @@
     "sharp": "^0.35.5"
   },
   "devDependencies": {
-    "esbuild": "^0.28.2",
-    "postject": "^1.0.0-alpha.6"
+    "esbuild": "^0.28.2"
   }
 }

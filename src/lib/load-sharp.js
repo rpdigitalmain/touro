@@ -32,5 +32,6 @@ export async function loadSharp() {
   } else if (!existing.isDirectory()) {
     throw new Error('The standalone image runtime cache path is not a real directory.');
   }
-  return createRequire(join(directory, 'runtime.cjs'))('sharp');
+  // SEA's ESM loader cannot import packages from the extracted cache.
+  return createRequire(join(directory, 'runtime.js'))('sharp');
 }

@@ -4,8 +4,8 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { it } from 'node:test';
 import { writeImageOutput } from '../../src/lib/image-output.js';
-import { optimizeBatch } from '../../src/lib/optimize-batch.js';
-import { openImageSource } from '../../src/lib/scan-images.js';
+import { BatchOptimizer } from '../../src/lib/optimize-batch.js';
+import { ImageSource } from '../../src/lib/scan-images.js';
 
 it('returns the same image record for a file and its parent directory', async (t) => {
   const root = await mkdtemp(join(tmpdir(), 'touro-image-source-'));
@@ -13,8 +13,8 @@ it('returns the same image record for a file and its parent directory', async (t
   const image = join(root, 'cover.JPG');
   await writeFile(image, 'abc');
 
-  const file = await openImageSource(image, { allowFile: true });
-  const directory = await openImageSource(root);
+  const file = await ImageSource.open(image, { allowFile: true });
+  const directory = await ImageSource.open(root);
   const records = [{ path: 'cover.JPG', format: 'jpeg', size: 3 }];
   assert.equal(file.root, directory.root);
   assert.deepEqual(await file.listImages({ format: 'jpeg' }), records);
@@ -42,14 +42,14 @@ it('plans a batch and aggregates results with an injected processor', async (t) 
   }
 
   const processed = [];
-  const batch = await optimizeBatch(root, {
-    format: 'webp',
-    createProcessor: async () => async (_root, _output, job) => {
+  const optimizer = new BatchOptimizer(async () => ({
+    async optimize(_root, _output, job) {
       processed.push(job.targetPath);
       if (job.image.path === 'icon.png') throw new Error('Test encoder failed.');
       return { status: 'converted', originalSize: 3, finalSize: 2 };
     },
-  });
+  }));
+  const batch = await optimizer.run(root, { format: 'webp' });
 
   assert.deepEqual(processed, ['hero.webp', 'icon.webp']);
   assert.deepEqual(batch.failures.map(({ path }) => path), ['cover.jpg', 'cover.png', 'icon.png']);

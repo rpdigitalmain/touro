@@ -1,7 +1,7 @@
 import { CommanderError, InvalidArgumentError, Option } from 'commander';
 import { imageFormats } from '../lib/image-formats.js';
-import { optimizeBatch } from '../lib/optimize-batch.js';
-import { createImageProcessor } from '../lib/optimize-image.js';
+import { BatchOptimizer } from '../lib/optimize-batch.js';
+import { ImageProcessor } from '../lib/optimize-image.js';
 import { createTable, displayPath, escapeControls, formatSize } from '../lib/terminal-format.js';
 
 function parseQuality(value) {
@@ -56,6 +56,7 @@ function report(logger, { results, failures, summary, output }) {
 }
 
 export function registerOptimize(program, context) {
+  const optimizer = new BatchOptimizer(ImageProcessor.create);
   program
     .command('optimize')
     .description('Optimize images and compare original and final sizes')
@@ -66,7 +67,7 @@ export function registerOptimize(program, context) {
     .action(async (path, options, command) => {
       let batch;
       try {
-        batch = await optimizeBatch(path, { ...options, createProcessor: createImageProcessor });
+        batch = await optimizer.run(path, options);
       } catch (error) {
         command.error(`error: Could not optimize "${escapeControls(path)}". ${escapeControls(error.message)}`, {
           code: 'touro.operationFailed',

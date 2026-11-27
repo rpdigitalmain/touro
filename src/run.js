@@ -1,4 +1,4 @@
-// Shared by bin/touro.js and the standalone executable's CommonJS bundle.
+// Shared by bin/touro.js and the standalone executable's ESM bundle.
 import { main } from './cli.js';
 
 main(process.argv.slice(2)).then(

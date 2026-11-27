@@ -1,7 +1,7 @@
 import { lstat, mkdir, realpath } from 'node:fs/promises';
 import { join, relative, resolve } from 'node:path';
 import { outputPathFor } from './image-formats.js';
-import { openImageSource } from './scan-images.js';
+import { ImageSource } from './scan-images.js';
 
 async function existingStats(path) {
   try {
@@ -23,53 +23,62 @@ async function checkOutput(root, output) {
   return output;
 }
 
-export async function optimizeBatch(path, { output: destination, format, quality = 80, createProcessor }) {
-  const { root, listImages } = await openImageSource(path, { allowFile: true });
-  let output = await checkOutput(root, destination === undefined ? join(root, 'touro-output') : resolve(destination));
-  const images = await listImages({ excludedDirectory: output });
-  const destinations = new Map();
-  for (const image of images) {
-    const outputFormat = format ?? image.format;
-    const targetPath = outputPathFor(image, outputFormat);
-    // Windows destinations are generally case-insensitive.
-    const key = process.platform === 'win32' ? targetPath.toLowerCase() : targetPath;
-    if (!destinations.has(key)) destinations.set(key, []);
-    destinations.get(key).push({ image, format: outputFormat, targetPath });
+export class BatchOptimizer {
+  #createProcessor;
+
+  constructor(createProcessor) {
+    this.#createProcessor = createProcessor;
   }
 
-  const results = [];
-  const failures = [];
-  const summary = { converted: 0, optimized: 0, unchanged: 0, originalSize: 0, finalSize: 0 };
-  const ready = [];
-  for (const group of destinations.values()) {
-    for (const job of group) {
-      try {
-        const target = join(output, job.targetPath);
-        if (group.length > 1) throw new Error(`Multiple inputs map to the same output: ${target}`);
-        if (await existingStats(target)) throw new Error(`Output already exists: ${target}`);
-        ready.push(job);
-      } catch (error) {
-        failures.push({ path: job.image.path, message: error.message });
+  async run(path, { output: destination, format, quality = 80 } = {}) {
+    const source = await ImageSource.open(path, { allowFile: true });
+    const { root } = source;
+    let output = await checkOutput(root, destination === undefined ? join(root, 'touro-output') : resolve(destination));
+    const images = await source.listImages({ excludedDirectory: output });
+    const destinations = new Map();
+    for (const image of images) {
+      const outputFormat = format ?? image.format;
+      const targetPath = outputPathFor(image, outputFormat);
+      // Windows destinations are generally case-insensitive.
+      const key = process.platform === 'win32' ? targetPath.toLowerCase() : targetPath;
+      if (!destinations.has(key)) destinations.set(key, []);
+      destinations.get(key).push({ image, format: outputFormat, targetPath });
+    }
+
+    const results = [];
+    const failures = [];
+    const summary = { converted: 0, optimized: 0, unchanged: 0, originalSize: 0, finalSize: 0 };
+    const ready = [];
+    for (const group of destinations.values()) {
+      for (const job of group) {
+        try {
+          const target = join(output, job.targetPath);
+          if (group.length > 1) throw new Error(`Multiple inputs map to the same output: ${target}`);
+          if (await existingStats(target)) throw new Error(`Output already exists: ${target}`);
+          ready.push(job);
+        } catch (error) {
+          failures.push({ path: job.image.path, message: error.message });
+        }
       }
     }
-  }
 
-  if (ready.length > 0) {
-    const processImage = await createProcessor();
-    await mkdir(output, { recursive: true });
-    output = await checkOutput(root, output);
-    for (const job of ready) {
-      try {
-        const result = await processImage(root, output, job, quality);
-        results.push(result);
-        summary[result.status] += 1;
-        summary.originalSize += result.originalSize;
-        summary.finalSize += result.finalSize;
-      } catch (error) {
-        failures.push({ path: job.image.path, message: error.message });
+    if (ready.length > 0) {
+      const processor = await this.#createProcessor();
+      await mkdir(output, { recursive: true });
+      output = await checkOutput(root, output);
+      for (const job of ready) {
+        try {
+          const result = await processor.optimize(root, output, job, quality);
+          results.push(result);
+          summary[result.status] += 1;
+          summary.originalSize += result.originalSize;
+          summary.finalSize += result.finalSize;
+        } catch (error) {
+          failures.push({ path: job.image.path, message: error.message });
+        }
       }
     }
-  }
 
-  return { output, results, failures, summary };
+    return { output, results, failures, summary };
+  }
 }
