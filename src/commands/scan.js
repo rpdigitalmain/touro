@@ -1,23 +1,25 @@
 import { Option } from 'commander';
-import { imageFormats } from '../images/formats.js';
+import { DEFAULT_SOURCE, OPERATION_FAILED } from '../shared/constants/application.js';
+import { IMAGE_FORMATS } from '../shared/constants/images.js';
 import { ImageSource } from '../images/source.js';
-import { escapeControls } from '../terminal/format.js';
+import { TouroError } from '../shared/errors.js';
 import { presentScan } from '../terminal/presenters/inventory.js';
 
 export function registerScan(program, context) {
   program
     .command('scan')
     .description('Find image files recursively by extension')
-    .argument('[path]', 'Directory to scan', '.')
-    .addOption(new Option('--format <format>', 'Only list images of this format').choices(imageFormats))
-    .action(async (path, { format }, command) => {
+    .argument('[path]', 'Directory to scan', DEFAULT_SOURCE)
+    .addOption(new Option('--format <format>', 'Only list images of this format').choices(IMAGE_FORMATS))
+    .action(async (path, { format }) => {
       let images;
       try {
         const source = await ImageSource.open(path);
         images = await source.listImages({ format: format ?? program.opts().format });
-      } catch (error) {
-        command.error(`error: Could not scan "${escapeControls(path)}". ${escapeControls(error.message)}`, {
-          code: 'touro.operationFailed',
+      } catch (cause) {
+        throw new TouroError(OPERATION_FAILED, {
+          cause,
+          context: { operation: 'scan', path },
         });
       }
 

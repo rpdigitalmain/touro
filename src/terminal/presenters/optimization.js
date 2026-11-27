@@ -1,4 +1,6 @@
-import { displayPath, escapeControls, formatPercent, formatSize, writeTable } from '../format.js';
+import { displayPath, formatPercent, formatSize, writeTable } from '../format.js';
+import { IMAGE_STATUS } from '../../shared/constants/images.js';
+import { presentImageFailure } from './errors.js';
 
 const columns = [
   { label: 'FORMAT', minWidth: 11 },
@@ -10,14 +12,14 @@ const columns = [
 ];
 
 export function presentOptimization(logger, { results, failures, summary }) {
-  for (const { path, message } of failures) {
-    logger.error(`Failed: ${displayPath(path)} (${escapeControls(message)})`, { color: false });
+  for (const failure of failures) {
+    presentImageFailure(logger, failure);
   }
 
   const { originalSize: original, finalSize: final } = summary;
   const rows = results.map((result) => {
     const from = result.inputFormat.toUpperCase();
-    const format = result.status === 'converted' ? `${from} → ${result.outputFormat.toUpperCase()}` : from;
+    const format = result.status === IMAGE_STATUS.CONVERTED ? `${from} → ${result.outputFormat.toUpperCase()}` : from;
     const saved = result.originalSize - result.finalSize;
     const size = `${saved < 0 ? '-' : ''}${formatSize(Math.abs(saved))}`;
     return [
@@ -34,7 +36,7 @@ export function presentOptimization(logger, { results, failures, summary }) {
   const total = results.length + failures.length;
   if (results.length > 0) logger.out('');
   logger.out(`${total} ${total === 1 ? 'image' : 'images'} processed`);
-  logger.out(`${summary.optimized} optimized · ${summary.converted} converted · ${summary.unchanged} unchanged · ${failures.length} failed`);
+  logger.out(`${summary[IMAGE_STATUS.OPTIMIZED]} optimized · ${summary[IMAGE_STATUS.CONVERTED]} converted · ${summary[IMAGE_STATUS.UNCHANGED]} unchanged · ${failures.length} failed`);
   logger.out('');
   const saved = original - final;
   const comparison = `${formatSize(original)} → ${formatSize(final)}`;

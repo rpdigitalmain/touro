@@ -8,16 +8,17 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync
 import { dirname, join, resolve, sep } from 'node:path';
 import { Command } from 'commander';
 import { build } from 'esbuild';
+import { EXIT_CODE, PLATFORM } from '../src/shared/constants/application.js';
 
 const root = resolve(import.meta.dirname, '..');
 const pkg = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'));
 if (!pkg.os.includes(process.platform)) {
   console.error(`Unsupported platform: ${process.platform}. Touro supports Linux and Windows.`);
-  process.exit(1);
+  process.exit(EXIT_CODE.FAILURE);
 }
 
 const binName = Object.keys(pkg.bin)[0];
-const exeSuffix = process.platform === 'win32' ? '.exe' : '';
+const exeSuffix = process.platform === PLATFORM.WINDOWS ? '.exe' : '';
 
 const options = new Command()
   .name('build-exe')
@@ -27,7 +28,7 @@ const options = new Command()
   .opts();
 if (Number(process.versions.node.split('.')[0]) !== 26) {
   console.error('Building the standalone executable requires Node.js 26.');
-  process.exit(1);
+  process.exit(EXIT_CODE.FAILURE);
 }
 
 const out = resolve(root, options.out);

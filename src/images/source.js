@@ -1,6 +1,8 @@
 import { lstat, readdir, realpath } from 'node:fs/promises';
 import { basename, dirname, join, relative, resolve } from 'node:path';
 import { imageFormatFor } from './formats.js';
+import { IMAGE_ERROR } from './errors.js';
+import { TouroError } from '../shared/errors.js';
 
 const excludedDirectories = new Set(['node_modules', 'bower_components', 'vendor', 'build', 'dist', 'dist-exe']);
 
@@ -65,7 +67,7 @@ export class ImageSource {
       const file = new ImageFile(join(root, basename(input)), stats);
       return new ImageSource(root, file);
     }
-    throw new Error(allowFile ? 'Expected a directory or a JPEG, PNG, or WebP file.' : 'Expected a directory.');
+    throw new TouroError(IMAGE_ERROR.INVALID_SOURCE, { context: { allowFile, path: input } });
   }
 
   get root() {

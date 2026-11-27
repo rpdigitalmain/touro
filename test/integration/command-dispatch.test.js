@@ -25,4 +25,18 @@ describe('CLI command dispatch', () => {
     assert.equal(await main(['greet', '--times', 'zero']), 2);
     assert.match(stderr.mock.calls[0].arguments[0], /--times must be a positive integer/);
   });
+
+  it('reports unexpected errors and shows the stack only with verbose output', async ({ mock }) => {
+    mock.method(process.stdout, 'write', () => { throw new Error('Unexpected write failure'); });
+    const stderr = mock.method(process.stderr, 'write', () => true);
+
+    assert.equal(await main(['info', '--no-color']), 1);
+    assert.deepEqual(stderr.mock.calls.map(({ arguments: args }) => args[0]), [
+      'error: An unexpected error occurred. Rerun with --verbose for details.\n',
+    ]);
+
+    stderr.mock.resetCalls();
+    assert.equal(await main(['info', '--no-color', '--verbose']), 1);
+    assert.match(stderr.mock.calls[1].arguments[0], /debug: Error: Unexpected write failure\n\s+at /);
+  });
 });

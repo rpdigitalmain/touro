@@ -6,6 +6,8 @@ import { it } from 'node:test';
 import { replaceImage } from '../../src/images/replace.js';
 import { BatchOptimizer } from '../../src/images/batch-optimizer.js';
 import { ImageSource } from '../../src/images/source.js';
+import { IMAGE_ERROR } from '../../src/images/errors.js';
+import { TouroError } from '../../src/shared/errors.js';
 
 it('returns the same image record for a file and its parent directory', async (t) => {
   const root = await mkdtemp(join(tmpdir(), 'touro-image-source-'));
@@ -33,7 +35,13 @@ it('preserves both paths and removes the temporary file when publication collide
   const stats = await lstat(source, { bigint: true });
   await writeFile(target, 'occupied');
 
-  await assert.rejects(replaceImage(source, target, Buffer.from('replacement'), stats), /Target already exists/);
+  await assert.rejects(replaceImage(source, target, Buffer.from('replacement'), stats), (error) => {
+    assert.ok(error instanceof TouroError);
+    assert.equal(error.code, IMAGE_ERROR.TARGET_EXISTS);
+    assert.deepEqual(error.context, { target });
+    assert.equal(error.cause.code, 'EEXIST');
+    return true;
+  });
   assert.deepEqual(await readFile(source), original);
   assert.equal(await readFile(target, 'utf8'), 'occupied');
   assert.deepEqual((await readdir(root)).sort(), ['cover.png', 'cover.webp']);
@@ -47,7 +55,10 @@ it('keeps a source edited during encoding and cleans up the temporary file', asy
   const stats = await lstat(source, { bigint: true });
   await writeFile(source, 'updated content');
 
-  await assert.rejects(replaceImage(source, source, Buffer.from('optimized'), stats), /Source changed/);
+  await assert.rejects(replaceImage(source, source, Buffer.from('optimized'), stats), {
+    code: IMAGE_ERROR.SOURCE_CHANGED,
+    context: { source },
+  });
   assert.equal(await readFile(source, 'utf8'), 'updated content');
   assert.deepEqual(await readdir(root), ['cover.png']);
 });
@@ -60,10 +71,11 @@ it('plans a batch and aggregates results with an injected processor', async (t) 
   }
 
   const processed = [];
+  const encoderError = new Error('Test encoder failed.');
   const optimizer = new BatchOptimizer(async () => ({
     async optimize(_root, job) {
       processed.push(job.targetPath);
-      if (job.image.path === 'icon.png') throw new Error('Test encoder failed.');
+      if (job.image.path === 'icon.png') throw encoderError;
       return { status: 'converted', originalSize: 3, finalSize: 2 };
     },
   }));
@@ -71,6 +83,9 @@ it('plans a batch and aggregates results with an injected processor', async (t) 
 
   assert.deepEqual(processed, ['hero.webp', 'icon.webp']);
   assert.deepEqual(batch.failures.map(({ path }) => path), ['cover.jpg', 'cover.png', 'icon.png']);
+  assert.ok(batch.failures[0].error instanceof TouroError);
+  assert.equal(batch.failures[0].error.code, IMAGE_ERROR.TARGET_CONFLICT);
+  assert.equal(batch.failures[2].error, encoderError);
   assert.equal(batch.results.length, 1);
   assert.deepEqual(batch.summary, { converted: 1, optimized: 0, unchanged: 0, originalSize: 3, finalSize: 2 });
 });

@@ -130,11 +130,19 @@ describe('scan', () => {
     const missing = run('scan', join(root, 'missing'));
     assert.equal(missing.code, 1);
     assert.equal(missing.stdout, '');
-    assert.match(missing.stderr, /Could not scan.*missing/);
+    assert.equal(missing.stderr, `error: Could not scan "${join(root, 'missing')}": the path does not exist.\n`);
+    assert.doesNotMatch(missing.stderr, /\n\s+at /);
+
+    const verbose = run('scan', join(root, 'missing'), '--verbose');
+    assert.equal(verbose.code, 1);
+    assert.match(verbose.stderr, /debug: TouroError: touro\.operationFailed/);
+    assert.match(verbose.stderr, /\[cause\]: Error: ENOENT/);
+    assert.match(verbose.stderr, /\n\s+at /);
 
     const invalid = run('scan', root, '--format', 'gif');
     assert.equal(invalid.code, 2);
     assert.match(invalid.stderr, /Allowed choices are jpeg, png, webp/);
+    assert.match(invalid.stderr, /Run "touro --help" for usage\./);
   });
 });
 
@@ -150,8 +158,8 @@ describe('optimize', () => {
 
     const result = runIn(root, '--format', 'webp');
     assert.equal(result.code, 1);
-    assert.match(result.stderr, /Failed: cover\.jpg \(Multiple inputs map to the same target:/);
-    assert.match(result.stderr, /Failed: cover\.png \(Multiple inputs map to the same target:/);
+    assert.match(result.stderr, /error: Could not process "cover\.jpg": multiple images would produce the same file,/);
+    assert.match(result.stderr, /error: Could not process "cover\.png": multiple images would produce the same file,/);
     assert.match(result.stdout, /3 images processed\n0 optimized · 1 converted · 0 unchanged · 2 failed/);
     assert.deepEqual((await readdir(root)).filter((name) => name !== '.cache').sort(),
       ['cover.jpg', 'cover.png', 'logo.webp']);
@@ -209,7 +217,8 @@ describe('optimize', () => {
 
     const result = runIn(root);
     assert.equal(result.code, 1);
-    assert.match(result.stderr, /Failed: assets\/invalid\.jpg/);
+    assert.equal(result.stderr,
+      'error: Could not process "assets/invalid.jpg": the image is damaged or uses an unsupported format.\n');
     assert.match(result.stdout, /2 images processed\n1 optimized · 0 converted · 0 unchanged · 1 failed/);
     const optimized = await readFile(join(nested, 'photo.PNG'));
     assert.ok(optimized.length < original.length);
@@ -219,9 +228,11 @@ describe('optimize', () => {
       assert.deepEqual(await readFile(join(root, name, 'ignored.png')), original);
     }
 
-    const retry = runIn(root, '--quality', '80');
+    const retry = runIn(root, '--quality', '80', '--verbose');
     assert.equal(retry.code, 1);
     assert.match(retry.stdout, /2 images processed\n0 optimized · 0 converted · 1 unchanged · 1 failed/);
+    assert.match(retry.stderr, /debug: TouroError: touro\.io\.decodeFailed/);
+    assert.match(retry.stderr, /\[cause\]: Error:/);
     assert.deepEqual(await readdir(nested), ['photo.PNG']);
     assert.deepEqual(await readFile(join(nested, 'photo.PNG')), optimized);
     assert.deepEqual((await readdir(join(root, 'assets'))).sort(), ['invalid.jpg', 'nested']);

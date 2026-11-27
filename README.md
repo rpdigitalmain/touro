@@ -68,7 +68,7 @@ touro --help
 touro --version
 ```
 
-Use `--verbose` for debug output and `--no-color` to disable colored diagnostics. Results go to stdout and diagnostics go to stderr. Exit codes are `0` for success, `1` for failure or an unknown command, and `2` for invalid arguments or options.
+Use `--verbose` for debug output, including error stack traces and their causes. Use `--no-color` to disable colored diagnostics. Results go to stdout and diagnostics go to stderr. Exit codes are `0` for success, `1` for failure or an unknown command, and `2` for invalid arguments or options.
 
 `touro` recursively optimizes JPEG, PNG, and WebP images in the current directory. Same-format optimization keeps the original filename, including the case of its extension, and replaces the file only when the result is smaller. Use `touro optimize <path>` to select a specific image or directory.
 
@@ -91,6 +91,7 @@ src/images/            Image discovery, encoding, and file replacement
 src/terminal/          Logging and shared console formatting
 src/terminal/presenters/  Optimization and scan reports
 src/runtime/           Sharp loading, platform paths, and package metadata
+src/shared/constants/  Shared application and image definitions
 scripts/build-exe.mjs  Standalone executable build
 test/unit/             Isolated module tests
 test/integration/      Command dispatch and argument handling

@@ -1,4 +1,5 @@
-import { styleText } from 'node:util';
+import { inspect, styleText } from 'node:util';
+import { escapeControls } from './format.js';
 
 /**
  * stdout carries the command's result (pipeable); diagnostics go to stderr.
@@ -21,6 +22,13 @@ export function createLogger(options = {}) {
     error: (m, { color = true } = {}) => void stderr.write(`${color ? paint('red', 'error:') : 'error:'} ${m}\n`),
     debug: (m) => {
       if (options.verbose) stderr.write(`${paint('gray', `debug: ${m}`)}\n`);
+    },
+    debugError: (error) => {
+      if (options.verbose) {
+        const details = inspect(error, { colors: false, customInspect: false, depth: null })
+          .split('\n').map(escapeControls).join('\n');
+        stderr.write(`${paint('gray', `debug: ${details}`)}\n`);
+      }
     },
   };
 }

@@ -4,6 +4,7 @@ import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 import * as sea from 'node:sea';
 import { appPaths } from './paths.js';
+import { INFRASTRUCTURE_ERROR, rethrowAfterCleanup, TouroError } from '../shared/errors.js';
 
 export async function loadSharp() {
   if (!sea.isSea()) return (await import('sharp')).default;
@@ -15,6 +16,7 @@ export async function loadSharp() {
   const existing = lstatSync(directory, { throwIfNoEntry: false });
   if (!existing) {
     const staging = await mkdtemp(join(cache, 'runtime-'));
+    const cleanup = () => rm(staging, { recursive: true, force: true });
     try {
       for (const key of sea.getAssetKeys()) {
         const path = join(staging, key);
@@ -26,11 +28,12 @@ export async function loadSharp() {
       } catch (error) {
         if (!lstatSync(directory, { throwIfNoEntry: false })?.isDirectory()) throw error;
       }
-    } finally {
-      await rm(staging, { recursive: true, force: true });
+    } catch (cause) {
+      await rethrowAfterCleanup(cause, cleanup);
     }
+    await cleanup();
   } else if (!existing.isDirectory()) {
-    throw new Error('The standalone image runtime cache path is not a real directory.');
+    throw new TouroError(INFRASTRUCTURE_ERROR.RUNTIME_CACHE_INVALID, { context: { directory } });
   }
   // SEA's ESM loader cannot import packages from the extracted cache.
   return createRequire(join(directory, 'runtime.js'))('sharp');

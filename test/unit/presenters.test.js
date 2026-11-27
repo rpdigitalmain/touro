@@ -2,6 +2,8 @@ import assert from 'node:assert/strict';
 import { it } from 'node:test';
 import { presentScan } from '../../src/terminal/presenters/inventory.js';
 import { presentOptimization } from '../../src/terminal/presenters/optimization.js';
+import { IMAGE_ERROR } from '../../src/images/errors.js';
+import { TouroError } from '../../src/shared/errors.js';
 
 it('widens the scan size column to align values and preserve full paths', () => {
   const lines = [];
@@ -52,17 +54,20 @@ it('uses the scan table when it fits the terminal exactly', () => {
 it('preserves optimization metrics in narrow terminals and reports size increases', () => {
   const lines = [];
   const errors = [];
+  const debug = [];
+  const failure = new TouroError(IMAGE_ERROR.ANIMATED);
   const path = 'assets/converted image.webp';
   presentOptimization({
     out: (line) => lines.push(line),
     error: (...args) => errors.push(args),
+    debugError: (error) => debug.push(error),
     columns: 24,
   }, {
     results: [{
       inputFormat: 'png', outputFormat: 'webp', status: 'converted',
       originalSize: 100, finalSize: 125, targetPath: path,
     }],
-    failures: [{ path: 'broken.png', message: 'Invalid image' }],
+    failures: [{ path: 'broken.png', error: failure }],
     summary: { optimized: 0, converted: 1, unchanged: 0, originalSize: 100, finalSize: 125 },
   });
 
@@ -72,5 +77,6 @@ it('preserves optimization metrics in narrow terminals and reports size increase
     '2 images processed', '0 optimized · 1 converted · 0 unchanged · 1 failed',
     '', '100 B → 125 B · 25 B added (25.0%)',
   ]);
-  assert.deepEqual(errors, [['Failed: broken.png (Invalid image)', { color: false }]]);
+  assert.deepEqual(errors, [['Could not process "broken.png": animated images are not supported.', { color: false }]]);
+  assert.deepEqual(debug, [failure]);
 });

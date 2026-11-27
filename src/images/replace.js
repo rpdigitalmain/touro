@@ -1,13 +1,16 @@
 import { randomUUID } from 'node:crypto';
 import { link, lstat, open, rename, unlink } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
+import { PLATFORM } from '../shared/constants/application.js';
+import { rethrowAfterCleanup, TouroError } from '../shared/errors.js';
+import { IMAGE_ERROR, targetExistsError } from './errors.js';
 
 async function checkSource(source, original) {
   const current = await lstat(source, { bigint: true });
   if (!current.isFile() || current.dev !== original.dev || current.ino !== original.ino ||
       current.size !== original.size || current.mtimeNs !== original.mtimeNs ||
       current.ctimeNs !== original.ctimeNs) {
-    throw new Error('Source changed during optimization.');
+    throw new TouroError(IMAGE_ERROR.SOURCE_CHANGED, { context: { source } });
   }
 }
 
@@ -18,11 +21,12 @@ export async function replaceImage(source, target, bytes, original) {
   try {
     try {
       await file.writeFile(bytes);
-      if (process.platform !== 'win32') await file.chmod(Number(original.mode & 0o777n));
+      if (process.platform !== PLATFORM.WINDOWS) await file.chmod(Number(original.mode & 0o777n));
       await file.sync();
-    } finally {
-      await file.close();
+    } catch (cause) {
+      await rethrowAfterCleanup(cause, () => file.close());
     }
+    await file.close();
 
     await checkSource(source, original);
     if (source === target) {
@@ -35,7 +39,7 @@ export async function replaceImage(source, target, bytes, original) {
     try {
       await link(temporary, target);
     } catch (error) {
-      if (error.code === 'EEXIST') throw new Error(`Target already exists: ${target}`, { cause: error });
+      if (error.code === 'EEXIST') throw targetExistsError(target, error);
       throw error;
     }
     try {
@@ -43,11 +47,11 @@ export async function replaceImage(source, target, bytes, original) {
       temporaryExists = false;
       await checkSource(source, original);
       await unlink(source);
-    } catch (error) {
-      await unlink(target);
-      throw error;
+    } catch (cause) {
+      await rethrowAfterCleanup(cause, () => unlink(target));
     }
-  } finally {
-    if (temporaryExists) await unlink(temporary);
+  } catch (cause) {
+    if (temporaryExists) await rethrowAfterCleanup(cause, () => unlink(temporary));
+    throw cause;
   }
 }
