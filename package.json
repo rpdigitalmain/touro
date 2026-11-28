@@ -1,5 +1,5 @@
 {
-  "name": "@rpdigitalmain/touro",
+  "name": "@touro/cli",
   "version": "1.0.0",
   "description": "A cross-platform Node.js CLI for optimizing JPEG, PNG, and WebP images in place.",
   "type": "module",
