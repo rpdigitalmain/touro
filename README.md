@@ -44,6 +44,7 @@ Touro optimizes JPEG, PNG, and WebP images directly in their original locations.
 - [Development](#development)
 - [Performance Benchmarks](#performance-benchmarks)
 - [Code Scanning](#code-scanning)
+- [Report a Security Vulnerability](docs/SECURITY.md)
 - [Standalone Executables](#standalone-executables)
 
 ---
@@ -96,110 +97,22 @@ After linking, `touro scan` operates on the current directory by default. The li
 
 ## Usage
 
-Run Touro directly from the terminal:
+Scan the target directory first. Optimization modifies files in place, so keep a backup and review the [safe usage guide](docs/guides/safe-usage.md) before processing originals. These examples skip the optional project configuration.
 
 ```sh
-# Optimize images in the current directory
-touro
-
-# Optimize images in a specific directory
-touro ./assets
-
-# Optimize a directory whose name contains spaces
-touro "./client assets"
-
-# Set optimization quality
-touro --quality 80
-
-# Convert images in a specific directory
-touro ./assets --format webp --quality 80
-
-# Scan the current directory
-touro scan
-
-# Display help
-touro --help
-
-# Display version
-touro --version
+touro scan --no-config ./assets
+touro --no-config ./assets
 ```
 
-### CLI Options
-
-| Option | Description |
-|---|---|
-| `--quality` | Set JPEG and WebP quality. |
-| `--format` | Convert images during optimization or filter results during a scan. |
-| `--verbose` | Display debug information, error causes, and stack traces. |
-| `--help` | Display available commands and options. |
-| `--version` | Display the installed version. |
-
-### Output and Exit Codes
-
-- Results are written to `stdout`.
-- Diagnostics are written to `stderr`.
-
-| Exit code | Meaning |
-|---|---|
-| `0` | Success |
-| `1` | Operation failure, including an invalid configuration or a missing or invalid target directory |
-| `2` | Invalid arguments or options |
-
-The optimization target must be a directory. Relative and absolute paths are supported. Use `--` before a directory name that starts with a dash or matches a command, as in `touro -- scan`.
+See the [command reference](docs/reference/commands.md) for syntax, options, and exit codes. If an operation fails, see the [troubleshooting guide](docs/guides/troubleshooting.md).
 
 ---
 
 ## Project Configuration
 
-Create an optional `touro.config.js` in the directory where you run Touro. Explicit CLI arguments and options take precedence over the file, and omitted settings fall back to the built-in defaults. Relative directories resolve from the working directory.
+Run `touro init` in your project directory to create an optional `touro.config.js`. The starter file contains commented examples and keeps the built-in behavior until you add overrides. See the [configuration guide](docs/guides/configuration.md) for options, precedence, and examples.
 
-```js
-// touro.config.js
-module.exports = {
-  discovery: {
-    recursive: true,
-    excludedDirectories: ['node_modules', 'bower_components', 'vendor', 'build', 'dist', 'dist-exe', 'drafts'],
-  },
-  encoding: {
-    jpeg: { background: '#f5f5f5' },
-    png: { compressionLevel: 6 },
-  },
-  scan: {
-    directory: './assets',
-    format: 'png',
-  },
-  optimize: {
-    directory: './assets',
-    format: 'webp',
-    quality: 85,
-  },
-  output: {
-    verbose: false,
-  },
-};
-```
-
-In an ES module project, replace `module.exports =` with `export default`. Config files and their imports load synchronously, so top-level `await` is unsupported. Use configuration files from projects you trust because Touro executes them as JavaScript.
-
-| Setting | Built-in default | Accepted values |
-|---|---|---|
-| `scan.directory` | `.` | Directory to scan |
-| `scan.format` | All supported formats | `jpeg`, `png`, or `webp` |
-| `optimize.directory` | `.` | Directory to optimize |
-| `optimize.format` | Keep each image's format | `jpeg`, `png`, or `webp` |
-| `optimize.quality` | `80` | Integer from `1` to `100` for JPEG and WebP |
-| `discovery.excludedDirectories` | `['node_modules', 'bower_components', 'vendor', 'build', 'dist', 'dist-exe']` | Array of directory names shared by scan and optimization |
-| `discovery.recursive` | `true` | Boolean. Set to `false` to process only files directly inside the target directory |
-| `encoding.jpeg.background` | `'#ffffff'` | Opaque hex color in `#RRGGBB` format for transparent areas when encoding JPEG |
-| `encoding.png.compressionLevel` | `9` | Integer from `0` to `9`. Lower levels can encode faster and may produce larger files |
-| `output.verbose` | `false` | Boolean. Enables debug diagnostics |
-| `output.json` | `false` | Boolean. Controls JSON output for `info` |
-
-Directory exclusions match names case-insensitively at every level below the target. The configured array replaces the built-in list. Use `[]` to clear the list. Hidden directories are still skipped during recursive discovery.
-
-PNG compression levels change encoding time and file size while preserving pixel values. Level `6` is a starting point for faster batches. Same-format optimization still replaces a file only when the result is smaller.
-
-Unknown settings and invalid values stop command execution with a configuration error. Help and version are available independently of the file.
+**Security:** Touro executes `touro.config.js` as JavaScript with your user permissions, including during `scan`. Only load configurations from projects you trust. Use `touro scan --no-config ./assets` to skip the external file and use built-in defaults plus explicit CLI options.
 
 ---
 
@@ -215,7 +128,7 @@ Touro provides:
 - Processing statistics and size reduction reports.
 - Linux and Windows compatibility.
 
-See [Features](docs/FEATURES.md) for supported formats, directory discovery, file replacement, and processing reports.
+See [Features](docs/reference/features.md) for supported formats, directory discovery, file replacement, and processing reports.
 
 ---
 
@@ -223,7 +136,7 @@ See [Features](docs/FEATURES.md) for supported formats, directory discovery, fil
 
 Touro follows a modular architecture with separated responsibilities for image processing, filesystem operations, application logic, and terminal presentation.
 
-See [Architecture](docs/ARCHITECTURE.md) for the CLI execution flow, module responsibilities, and project structure.
+See [Architecture](docs/development/architecture.md) for the CLI execution flow, module responsibilities, and project structure.
 
 ---
 
@@ -304,7 +217,7 @@ Evaluates the CLI batch optimizer using JPEG, PNG, and WebP images at 256×256 a
 
 Each sample processes three images. Fixture generation and restoration are excluded from timed measurements.
 
-Large-image scenarios also measure reading, encoding (including metadata), and atomic replacement separately.
+Large-image scenarios also measure reading, buffer-to-buffer encoding, file-to-file encoding, and atomic replacement separately. File-to-file timings include writing and removing the output file.
 
 **Concurrency and Memory**
 
@@ -377,7 +290,7 @@ The build generates an executable for the current platform:
 
 ### Runtime
 
-The executable includes Node.js and extracts its image runtime into the local Touro cache when an image optimization operation is first executed.
+The executable includes Node.js and extracts its image runtime into the local Touro cache when an image optimization operation is first executed. It checks ownership, write access, links, and asset integrity before loading the runtime. Keep this cache in a trusted per-user location. On Windows, standalone cache checks use the system Windows PowerShell to read filesystem access controls.
 
 ### Executable Testing
 

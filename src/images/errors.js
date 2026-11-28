@@ -5,6 +5,7 @@ export const IMAGE_ERROR = Object.freeze({
   NOT_REGULAR: 'touro.image.notRegular',
   FORMAT_MISMATCH: 'touro.image.formatMismatch',
   ANIMATED: 'touro.image.animated',
+  INPUT_LIMIT: 'touro.image.inputLimit',
   SOURCE_CHANGED: 'touro.image.sourceChanged',
   TARGET_CONFLICT: 'touro.image.targetConflict',
   TARGET_EXISTS: 'touro.image.targetExists',

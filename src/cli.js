@@ -53,6 +53,7 @@ export async function main(argv) {
       .version(pkg.version, '-v, --version', 'Show version')
       .helpOption('-h, --help', 'Show help')
       .option('--verbose', 'Print debug output')
+      .option('--no-config', 'Skip the project configuration file')
       .addHelpText('before', `${pkg.name} v${pkg.version}\n`)
       .addHelpText('after', '\nUse -- before a directory name that starts with "-" or matches a command.')
       .showHelpAfterError(`Run "${pkg.name} --help" for usage.`)
@@ -61,7 +62,10 @@ export async function main(argv) {
     registerCommands(program, async (overrides = {}) => {
       const output = { ...overrides.output };
       if (program.getOptionValueSource('verbose') === 'cli') output.verbose = program.opts().verbose;
-      const configuration = await resolveConfiguration({ cli: { ...overrides, output } });
+      const configuration = await resolveConfiguration({
+        useProjectConfig: program.opts().config,
+        cli: { ...overrides, output },
+      });
       logger = createLogger(configuration.output);
       return { pkg, logger, configuration };
     });

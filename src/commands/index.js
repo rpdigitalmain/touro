@@ -1,4 +1,5 @@
 import { registerInfo } from './info.js';
+import { registerInit } from './init.js';
 import { registerOptimization } from './optimize.js';
 import { registerScan } from './scan.js';
 
@@ -6,5 +7,6 @@ import { registerScan } from './scan.js';
 export function registerCommands(program, context) {
   registerInfo(program, context);
   registerScan(program, context);
+  registerInit(program);
   registerOptimization(program, context);
 }

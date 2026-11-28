@@ -1,10 +1,10 @@
 # Features
 
-Touro supports recursive discovery, in-place optimization, and format conversion for JPEG, PNG, and WebP. See the [README](../README.md#usage) for installation and basic CLI usage.
+Touro supports recursive discovery, in-place optimization, and format conversion for JPEG, PNG, and WebP. See the [command reference](commands.md) for CLI syntax and options.
 
 ## Image Discovery
 
-Touro discovers JPEG, PNG, and WebP images recursively. Scanning and optimization skip symbolic links and directories whose names start with a dot. The default exclusion list also skips `node_modules`, `bower_components`, `vendor`, `build`, `dist`, and `dist-exe`. Override it with `discovery.excludedDirectories` in [Project Configuration](../README.md#project-configuration).
+Touro discovers JPEG, PNG, and WebP images recursively. Scanning and optimization skip symbolic links and directories whose names start with a dot. The default exclusion list also skips `node_modules`, `bower_components`, `vendor`, `build`, `dist`, and `dist-exe`. Override it with `discovery.excludedDirectories`. See the [configuration guide](../guides/configuration.md).
 
 `touro scan [directory]` defaults to the current directory. It lists relative paths, formats, and sizes based on the file extension. Use `touro scan --format webp` to list only WebP files. Set `discovery.recursive` to `false` to limit both commands to the target directory.
 
@@ -12,9 +12,11 @@ Touro discovers JPEG, PNG, and WebP images recursively. Scanning and optimizatio
 
 `touro [directory]` optimizes images recursively. It uses the current directory when the argument is omitted. You can pass a relative path such as `touro ./assets`, an absolute path such as `touro /home/user/images`, or quote a path with spaces such as `touro "C:\Users\User\My Pictures"`. Pass `--` before a directory name that starts with a dash or matches a subcommand.
 
-Same-format optimization keeps the original filename, including the case of its extension, and replaces the file only when the result is smaller. Touro writes the complete result to a temporary file in the image's directory, then atomically replaces the original.
+Same-format optimization keeps the original filename, including the case of its extension, and replaces the file only when the result is smaller. Touro stages the complete result beside the source and uses an atomic rename to replace the original.
 
 `--quality <number>` sets JPEG and WebP quality from 1 to 100 and defaults to 80. PNG compression is lossless.
+
+The CLI processes one image at a time and caps libvips concurrency at two threads per image. It rejects inputs larger than 256 MiB or 67,108,864 pixels and applies a 120-second Sharp processing timeout per image. Sharp starts that timer when libvips opens the input. A PNG may contain up to 4,096 chunks before or including its first image-data chunk.
 
 ## Format Conversion
 

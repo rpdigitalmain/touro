@@ -1,11 +1,12 @@
 import { InvalidArgumentError, Option } from 'commander';
-import { OPERATION_FAILED, PARTIAL_FAILURE } from '../constants/application.js';
+import { PARTIAL_FAILURE } from '../constants/application.js';
 import { IMAGE_FORMATS } from '../constants/images.js';
 import { defaults, isQuality, qualityRange } from '../config/configuration.js';
 import { BatchOptimizer } from '../images/batch-optimizer.js';
 import { ImageProcessor } from '../images/processor.js';
 import { TouroError } from '../errors/errors.js';
 import { presentOptimization } from '../terminal/presenters/optimization.js';
+import { runOperation } from './operation.js';
 
 function parseQuality(value) {
   const quality = Number(value);
@@ -26,19 +27,8 @@ export function registerOptimization(program, context) {
     .action(async (directory, { format, quality }) => {
       const { configuration, logger } = await context({ optimize: { directory, format, quality } });
       const { directory: path } = configuration.optimize;
-      let batch;
-      try {
-        batch = await optimizer.run(path, {
-          ...configuration.optimize,
-          ...configuration.discovery,
-          encoding: configuration.encoding,
-        });
-      } catch (cause) {
-        throw new TouroError(OPERATION_FAILED, {
-          cause,
-          context: { operation: 'optimize', path },
-        });
-      }
+      const options = { ...configuration.optimize, ...configuration.discovery, encoding: configuration.encoding };
+      const batch = await runOperation('optimize', path, () => optimizer.run(path, options));
 
       presentOptimization(logger, batch);
       if (batch.failures.length > 0) {

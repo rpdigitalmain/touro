@@ -28,6 +28,8 @@ function describeError(error, fallback = unexpected) {
         return 'the file or directory is in use.';
       case 'EISDIR':
         return 'the path points to a directory.';
+      case 'EEXIST':
+        return 'the path already exists.';
       case 'ENAMETOOLONG':
         return 'the path is too long.';
       case 'EIO':
@@ -50,6 +52,8 @@ function describeError(error, fallback = unexpected) {
       return `the extension indicates ${context.expected}, but the file contains a ${context.actual} image.`;
     case IMAGE_ERROR.ANIMATED:
       return 'animated images are not supported.';
+    case IMAGE_ERROR.INPUT_LIMIT:
+      return `the image exceeds the processing limit for ${context.limit}.`;
     case IMAGE_ERROR.SOURCE_CHANGED:
       return 'the source file changed during optimization.';
     case IMAGE_ERROR.TARGET_CONFLICT:
@@ -63,7 +67,7 @@ function describeError(error, fallback = unexpected) {
     case INFRASTRUCTURE_ERROR.RUNTIME_LOAD_FAILED:
       return `the image processing engine could not start: ${describeError(cause, 'rerun with --verbose for details.')}`;
     case INFRASTRUCTURE_ERROR.RUNTIME_CACHE_INVALID:
-      return 'the image processing cache path is not a directory.';
+      return `the image processing cache could not be trusted (${context.reason}). Check its location and permissions.`;
     case INFRASTRUCTURE_ERROR.CLEANUP_FAILED:
       return `${describeError(cause)} Temporary-file cleanup also failed: ${describeError(context.cleanupError, 'rerun with --verbose for details.')}`;
     case UNSUPPORTED_PLATFORM:

@@ -1,9 +1,8 @@
 import { Option } from 'commander';
-import { OPERATION_FAILED } from '../constants/application.js';
 import { IMAGE_FORMATS } from '../constants/images.js';
 import { ImageSource } from '../images/source.js';
-import { TouroError } from '../errors/errors.js';
 import { presentScan } from '../terminal/presenters/inventory.js';
+import { runOperation } from './operation.js';
 
 export function registerScan(program, context) {
   program
@@ -15,16 +14,10 @@ export function registerScan(program, context) {
       const format = options.format ?? program.opts().format;
       const { logger, configuration } = await context({ scan: { directory, format } });
       const path = configuration.scan.directory;
-      let images;
-      try {
+      const images = await runOperation('scan', path, async () => {
         const source = await ImageSource.open(path);
-        images = await source.listImages({ format: configuration.scan.format, ...configuration.discovery });
-      } catch (cause) {
-        throw new TouroError(OPERATION_FAILED, {
-          cause,
-          context: { operation: 'scan', path },
-        });
-      }
+        return source.listImages({ format: configuration.scan.format, ...configuration.discovery });
+      });
 
       presentScan(logger, images);
     });

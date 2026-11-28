@@ -1,3 +1,5 @@
+export const CONFIGURATION_FILENAME = 'touro.config.js';
+
 export const defaults = Object.freeze({
   scan: Object.freeze({ directory: '.', format: undefined }),
   optimize: Object.freeze({ directory: '.', format: undefined, quality: 80 }),
@@ -19,9 +21,15 @@ export function isQuality(value) {
 }
 
 export const internal = Object.freeze({
-  optimize: Object.freeze({ keepIccProfile: true }),
+  optimize: Object.freeze({
+    keepIccProfile: true,
+    maxFileBytes: 256 * 1024 ** 2,
+    maxPngHeaderChunks: 4096,
+    timeoutSeconds: 120,
+    threads: 2,
+  }),
   encoding: Object.freeze({
-    input: Object.freeze({ failOn: 'warning' }),
+    input: Object.freeze({ failOn: 'warning', limitInputPixels: 64 * 1024 ** 2 }),
     jpeg: Object.freeze({ mozjpeg: true }),
     png: Object.freeze({ adaptiveFiltering: true }),
   }),

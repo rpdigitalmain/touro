@@ -1,15 +1,26 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdir, readFile, readdir, symlink, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, open, readFile, readdir, rm, symlink, writeFile } from 'node:fs/promises';
+import { homedir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { describe, it } from 'vitest';
+import { crc32 } from 'node:zlib';
+import { afterAll, beforeAll, describe, it } from 'vitest';
 import sharp from 'sharp';
 import { createTemporaryDirectory } from '../shared/temporary-directory.js';
 
 // Set CLI_EXE to a standalone executable (npm run build:exe) to test it instead.
 const exe = process.env.CLI_EXE ? resolve(process.env.CLI_EXE) : undefined;
 const cli = fileURLToPath(new URL('../../bin/touro.js', import.meta.url));
+let cacheHome;
+
+beforeAll(async () => {
+  if (exe) cacheHome = await mkdtemp(join(homedir(), '.touro-cli-test-'));
+});
+
+afterAll(async () => {
+  if (cacheHome) await rm(cacheHome, { recursive: true, force: true });
+});
 
 /** Runs the CLI in a child process, exactly as a user would. */
 function run(...args) {
@@ -23,8 +34,8 @@ function runIn(cwd, ...args) {
     encoding: 'utf8',
     env: {
       ...process.env,
-      LOCALAPPDATA: join(cwd, '.cache'),
-      XDG_CACHE_HOME: join(cwd, '.cache'),
+      LOCALAPPDATA: cacheHome ?? join(cwd, '.cache'),
+      XDG_CACHE_HOME: cacheHome ?? join(cwd, '.cache'),
     },
   });
   if (result.error) throw result.error;
@@ -50,6 +61,7 @@ describe('cli', () => {
     assert.match(stdout, /Commands:/);
     assert.match(stdout, /\bscan\b/);
     assert.match(stdout, /^\s+info \[options\]/m);
+    assert.match(stdout, /^\s+init\s+Create a project configuration file/m);
     assert.doesNotMatch(stdout, /^\s+(optimize|greet|hello) \[options\]/m);
   });
 
@@ -94,6 +106,58 @@ describe('cli', () => {
 });
 
 describe('project configuration', () => {
+  it('creates a CommonJS starter file and preserves an existing configuration', async (t) => {
+    const root = await createTemporaryDirectory(t, 'touro-init-');
+    const path = join(root, 'touro.config.js');
+
+    const init = runIn(root, 'init');
+    assert.equal(init.code, 0, init.stderr);
+    assert.equal(init.stdout, 'Created touro.config.js.\n');
+    assert.match(await readFile(path, 'utf8'), /^module\.exports = \{/m);
+    assert.match(await readFile(path, 'utf8'), /runs this JavaScript with your permissions, even during scan/);
+    const scan = runIn(root, 'scan');
+    assert.equal(scan.code, 0, scan.stderr);
+
+    const existing = 'throw new Error("Existing config must not be loaded");\n';
+    await writeFile(path, existing);
+    const repeated = runIn(root, 'init', '--verbose');
+    assert.equal(repeated.code, 1);
+    assert.match(repeated.stderr, /touro\.config\.js.*already exists/);
+    assert.doesNotMatch(repeated.stderr, /Existing config must not be loaded/);
+    assert.equal(await readFile(path, 'utf8'), existing);
+  });
+
+  it('skips evaluating project configuration and keeps explicit CLI inputs with --no-config', async (t) => {
+    const root = await createTemporaryDirectory(t, 'touro-config-');
+    await writeFile(join(root, 'touro.config.js'), 'throw new Error("Configuration executed");');
+    await writeFile(join(root, 'image.png'), 'image');
+    await writeFile(join(root, 'image.jpg'), 'image');
+
+    const scan = runIn(root, 'scan', '--no-config', '--format', 'png');
+    assert.equal(scan.code, 0, scan.stderr);
+    assert.match(scan.stdout, /image\.png/);
+    assert.doesNotMatch(scan.stdout, /image\.jpg/);
+    assert.equal(runIn(root, 'scan').code, 1);
+
+    const info = runIn(root, '--no-config', 'info', '--json');
+    assert.equal(info.code, 0, info.stderr);
+    assert.equal(JSON.parse(info.stdout).name, 'touro');
+  });
+
+  it('uses the parent package module type and writes to the current directory', async (t) => {
+    const root = await createTemporaryDirectory(t, 'touro-init-');
+    const directory = join(root, 'nested');
+    await writeFile(join(root, 'package.json'), '{"type":"module"}');
+    await mkdir(directory);
+
+    const init = runIn(directory, 'init');
+    assert.equal(init.code, 0, init.stderr);
+    assert.match(await readFile(join(directory, 'touro.config.js'), 'utf8'), /^export default \{/m);
+    assert.deepEqual(await readdir(root), ['nested', 'package.json']);
+    const scan = runIn(directory, 'scan');
+    assert.equal(scan.code, 0, scan.stderr);
+  });
+
   it('limits both commands to the target directory and uses the configured JPEG background', async (t) => {
     const root = await createTemporaryDirectory(t, 'touro-config-');
     await writeFile(join(root, 'touro.config.js'), `
@@ -286,6 +350,37 @@ describe('scan', () => {
   });
 });
 
+it('rejects oversized input before decoding and preserves the source', async (t) => {
+  const root = await createTemporaryDirectory(t, 'touro-large-input-');
+  const path = join(root, 'large.png');
+  const file = await open(path, 'wx');
+  try {
+    await file.truncate(256 * 1024 ** 2 + 1);
+  } finally {
+    await file.close();
+  }
+  const result = runIn(root);
+  assert.equal(result.code, 1);
+  assert.match(result.stderr, /large\.png.*processing limit.*256 MiB/);
+  assert.deepEqual(await readdir(root), ['large.png']);
+});
+
+it('rejects PNGs above the pixel limit and keeps the input', async (t) => {
+  const root = await createTemporaryDirectory(t, 'touro-large-png-');
+  const path = join(root, 'large.png');
+  const image = await sharp({
+    create: { width: 16, height: 16, channels: 3, background: 'red' },
+  }).png().toBuffer();
+  image.writeUInt32BE(8193, 16);
+  image.writeUInt32BE(8192, 20);
+  image.writeUInt32BE(crc32(image.subarray(12, 29)), 29);
+  await writeFile(path, image);
+  const result = runIn(root);
+  assert.equal(result.code, 1);
+  assert.match(result.stderr, /large\.png.*processing limit.*image dimensions/);
+  assert.deepEqual(await readFile(path), image);
+});
+
 describe('optimize', () => {
   it('reports colliding destinations before reading image contents and processes the rest', async (t) => {
     const root = await createTemporaryDirectory(t, 'touro-optimize-');
@@ -375,7 +470,7 @@ describe('optimize', () => {
   it('treats names after -- as directories even when they match a command or an option', async (t) => {
     const root = await createTemporaryDirectory(t, 'touro-literal-directory-');
     await writeFile(join(root, 'outside.png'), 'outside');
-    for (const name of ['--help', 'scan', 'info']) {
+    for (const name of ['--help', 'scan', 'info', 'init']) {
       await mkdir(join(root, name));
       const result = runIn(root, '--', name);
       assert.equal(result.code, 0, result.stderr);

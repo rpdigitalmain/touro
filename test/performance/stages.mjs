@@ -1,4 +1,4 @@
-import { copyFile, lstat, mkdir, readFile, readdir } from 'node:fs/promises';
+import { copyFile, lstat, mkdir, readFile, readdir, unlink, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import sharp from 'sharp';
 import { defaults } from '../../src/config/configuration.js';
@@ -15,21 +15,27 @@ export async function createStageScenarios(batches) {
     const format = imageFormatFor(filename);
     await mkdir(batch.directory, { recursive: true });
 
-    const encode = async () => {
-      const pipeline = sharp(original, { failOn: 'warning' });
+    const encoder = async (input) => {
+      const pipeline = sharp(input, { failOn: 'warning' });
       const metadata = await pipeline.metadata();
       pipeline.autoOrient().keepIccProfile();
       configureEncoder(format, pipeline, metadata, defaults.optimize.quality);
-      return pipeline.toBuffer();
+      return pipeline;
     };
+    const encode = async () => (await encoder(original)).toBuffer();
     const optimized = await encode();
+    const output = join(batch.directory, '.benchmark-output');
 
     const stages = [
       { label: 'Read', bytes: original.length, run: async () => {
         await lstat(source, { bigint: true });
         await readFile(source);
       } },
-      { label: 'Encode', bytes: original.length, run: encode },
+      { label: 'Encode buffer-to-buffer', bytes: original.length, run: encode },
+      { label: 'Encode file-to-file', bytes: original.length, run: async () => {
+        await (await encoder(source)).toFile(output);
+        await unlink(output);
+      } },
     ];
     if (optimized.length < original.length) {
       let stats;
@@ -40,7 +46,7 @@ export async function createStageScenarios(batches) {
           await copyFile(source, destination);
           stats = await lstat(destination, { bigint: true });
         },
-        run: () => replaceImage(destination, destination, optimized, stats),
+        run: () => replaceImage(destination, destination, stats, (path) => writeFile(path, optimized)),
       });
     }
 

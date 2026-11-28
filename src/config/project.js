@@ -1,10 +1,10 @@
-import { lstat } from 'node:fs/promises';
+import { lstat, stat } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import { resolve } from 'node:path';
 import { INVALID_CONFIGURATION } from '../constants/application.js';
 import { IMAGE_FORMATS } from '../constants/images.js';
 import { TouroError } from '../errors/errors.js';
-import { isQuality, qualityRange } from './configuration.js';
+import { CONFIGURATION_FILENAME, isQuality, qualityRange } from './configuration.js';
 
 // The standalone executable needs a filesystem-backed loader for external modules.
 const requireConfig = createRequire(import.meta.url);
@@ -56,16 +56,20 @@ function validate(value, rules, path = []) {
   }
 }
 
-export async function projectConfiguration({ cwd = process.cwd() } = {}) {
-  const path = resolve(cwd, 'touro.config.js');
+export async function projectConfiguration({ cwd = process.cwd(), useProjectConfig = true } = {}) {
+  if (!useProjectConfig) return {};
+  const path = resolve(cwd, CONFIGURATION_FILENAME);
   let configuration;
   try {
+    let stats;
     try {
-      await lstat(path);
+      stats = await lstat(path);
     } catch (error) {
       if (error.code === 'ENOENT') return {};
       throw error;
     }
+    if (stats.isSymbolicLink()) stats = await stat(path);
+    if (!stats.isFile()) throw new TypeError('Expected a regular configuration file.');
     configuration = requireConfig(path);
     if (configuration?.[Symbol.toStringTag] === 'Module') configuration = configuration.default;
   } catch (cause) {

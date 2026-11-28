@@ -3,12 +3,32 @@ import { lstat, readFile, readdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { it } from 'vitest';
 import { replaceImage } from '../../src/images/replace.js';
+import { validateImageHeader } from '../../src/images/header.js';
 import { BatchOptimizer } from '../../src/images/batch-optimizer.js';
 import { ImageSource } from '../../src/images/source.js';
 import { IMAGE_ERROR } from '../../src/images/errors.js';
 import { TouroError } from '../../src/errors/errors.js';
 import { createTemporaryDirectory } from '../shared/temporary-directory.js';
 
+it('detects an APNG header and bounds PNG chunk inspection', async (t) => {
+  const root = await createTemporaryDirectory(t, 'touro-image-headers-');
+  const path = join(root, 'cover.png');
+  const signature = Buffer.from('89504e470d0a1a0a', 'hex');
+  const animation = Buffer.alloc(20);
+  animation.writeUInt32BE(8);
+  animation.write('acTL', 4, 'ascii');
+  await writeFile(path, Buffer.concat([signature, animation]));
+  await assert.rejects(validateImageHeader(path, await lstat(path, { bigint: true }), 'png'), {
+    code: IMAGE_ERROR.ANIMATED,
+  });
+
+  const chunk = Buffer.alloc(12);
+  chunk.write('tEXt', 4, 'ascii');
+  await writeFile(path, Buffer.concat([signature, ...Array(4097).fill(chunk)]));
+  await assert.rejects(validateImageHeader(path, await lstat(path, { bigint: true }), 'png'), {
+    code: IMAGE_ERROR.INPUT_LIMIT,
+  });
+});
 it('discovers images with sizes for scan and paths for optimization', async (t) => {
   const root = await createTemporaryDirectory(t, 'touro-image-source-');
   const image = join(root, 'cover.JPG');
@@ -31,7 +51,7 @@ it('preserves both paths and removes the temporary file when publication collide
   const stats = await lstat(source, { bigint: true });
   await writeFile(target, 'occupied');
 
-  await assert.rejects(replaceImage(source, target, Buffer.from('replacement'), stats), (error) => {
+  await assert.rejects(replaceImage(source, target, stats, (path) => writeFile(path, 'replacement')), (error) => {
     assert.ok(error instanceof TouroError);
     assert.equal(error.code, IMAGE_ERROR.TARGET_EXISTS);
     assert.deepEqual(error.context, { target });
@@ -48,9 +68,12 @@ it('keeps a source edited during encoding and cleans up the temporary file', asy
   const source = join(root, 'cover.png');
   await writeFile(source, 'original');
   const stats = await lstat(source, { bigint: true });
-  await writeFile(source, 'updated content');
+  const encode = async (path) => {
+    await writeFile(path, 'smaller');
+    await writeFile(source, 'updated content');
+  };
 
-  await assert.rejects(replaceImage(source, source, Buffer.from('optimized'), stats), {
+  await assert.rejects(replaceImage(source, source, stats, encode), {
     code: IMAGE_ERROR.SOURCE_CHANGED,
     context: { source },
   });
