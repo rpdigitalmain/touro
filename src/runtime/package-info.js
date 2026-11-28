@@ -9,7 +9,7 @@ export function readPackageInfo() {
   if (!cached) {
     const url = new URL('../../package.json', import.meta.url);
     const json = JSON.parse(readFileSync(url, 'utf8'));
-    cached = { name: json.name ?? 'cli', version: json.version ?? '0.0.0', os: json.os };
+    cached = { name: Object.keys(json.bin)[0], version: json.version ?? '0.0.0', os: json.os };
   }
   return cached;
 }

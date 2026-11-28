@@ -76,7 +76,7 @@ await build({
     js: "import { createRequire as createDependencyRequire } from 'node:module';\nconst require = createDependencyRequire(import.meta.url);",
   },
   define: {
-    __PACKAGE_INFO__: JSON.stringify({ name: pkg.name, version: pkg.version, os: pkg.os }),
+    __PACKAGE_INFO__: JSON.stringify({ name: binName, version: pkg.version, os: pkg.os }),
     __NATIVE_RUNTIME_ID__: JSON.stringify(runtimeHash.digest('hex')),
   },
 });

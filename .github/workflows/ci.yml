@@ -36,8 +36,8 @@ jobs:
       - name: Install packed CLI globally
         shell: bash
         run: |
-          npm pack
-          npm install -g ./touro-*.tgz
+          archive="$(npm pack --silent)"
+          npm install -g "./$archive"
           touro --version
           touro --help
           touro info
