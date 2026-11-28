@@ -127,6 +127,37 @@ describe('project configuration', () => {
     assert.equal(await readFile(path, 'utf8'), existing);
   });
 
+  it('scans and optimizes the same images with or without the generated defaults', async (t) => {
+    const root = await createTemporaryDirectory(t, 'touro-init-');
+    const image = await sharp({
+      create: { width: 64, height: 64, channels: 3, background: '#ff8000' },
+    }).png({ compressionLevel: 0 }).toBuffer();
+    for (const directory of ['assets', 'node_modules', '.hidden']) {
+      await mkdir(join(root, directory));
+      await writeFile(join(root, directory, 'image.png'), image);
+    }
+
+    const visibleImage = join(root, 'assets', 'image.png');
+    const scan = runIn(root, 'scan');
+    assert.equal(scan.code, 0, scan.stderr);
+    assert.match(scan.stdout, /assets\/image\.png/);
+    assert.doesNotMatch(scan.stdout, /node_modules|\.hidden/);
+    const optimization = runIn(root);
+    assert.equal(optimization.code, 0, optimization.stderr);
+    const optimizedImage = await readFile(visibleImage);
+    assert.ok(optimizedImage.length < image.length);
+    await writeFile(visibleImage, image);
+
+    const init = runIn(root, 'init');
+    assert.equal(init.code, 0, init.stderr);
+    assert.deepEqual(runIn(root, 'scan'), scan);
+    assert.deepEqual(runIn(root), optimization);
+    assert.deepEqual(await readFile(visibleImage), optimizedImage);
+    for (const directory of ['node_modules', '.hidden']) {
+      assert.deepEqual(await readFile(join(root, directory, 'image.png')), image);
+    }
+  });
+
   it('skips evaluating project configuration and keeps explicit CLI inputs with --no-config', async (t) => {
     const root = await createTemporaryDirectory(t, 'touro-config-');
     await writeFile(join(root, 'touro.config.js'), 'throw new Error("Configuration executed");');

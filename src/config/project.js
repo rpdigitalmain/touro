@@ -4,7 +4,7 @@ import { resolve } from 'node:path';
 import { INVALID_CONFIGURATION } from '../constants/application.js';
 import { IMAGE_FORMATS } from '../constants/images.js';
 import { TouroError } from '../errors/errors.js';
-import { CONFIGURATION_FILENAME, isQuality, qualityRange } from './configuration.js';
+import { CONFIGURATION_FILENAME, isQuality, pngCompressionRange, qualityRange } from './configuration.js';
 
 // The standalone executable needs a filesystem-backed loader for external modules.
 const requireConfig = createRequire(import.meta.url);
@@ -18,6 +18,7 @@ const directoryNames = [
     !name.includes('/') && !name.includes('\\') && !name.includes('\0')),
   'an array of directory names',
 ];
+const { min: minPngCompression, max: maxPngCompression } = pngCompressionRange;
 const schema = {
   scan: { directory, format },
   optimize: {
@@ -32,7 +33,10 @@ const schema = {
       background: [(value) => typeof value === 'string' && /^#[0-9a-f]{6}$/i.test(value), 'a hex color in #RRGGBB format'],
     },
     png: {
-      compressionLevel: [(value) => Number.isInteger(value) && value >= 0 && value <= 9, 'an integer from 0 to 9'],
+      compressionLevel: [
+        (value) => Number.isInteger(value) && value >= minPngCompression && value <= maxPngCompression,
+        `an integer from ${minPngCompression} to ${maxPngCompression}`,
+      ],
     },
   },
 };

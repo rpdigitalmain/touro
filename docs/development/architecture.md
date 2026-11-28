@@ -14,7 +14,7 @@ When a command runs, the CLI calls `resolveConfiguration()`, the configuration f
 
 The project provider discovers, loads, and validates the file. It uses Node.js `createRequire()` to execute CommonJS and synchronous ES modules with the user's permissions. This applies to scans as well as optimization. With `--no-config`, the provider skips filesystem access and module loading. A missing file contributes no settings. An invalid file stops the command with a diagnostic. Help and version are available without loading the file.
 
-`init` creates a starter file using exclusive write access and selects its syntax from the nearest package's module type. It runs independently of configuration resolution.
+`init` uses the built-in defaults to populate the starter file and selects its syntax from the nearest package's module type. It writes exclusively and runs independently of configuration resolution.
 
 The project provider's schema defines the public settings. Internal policies such as ICC profile preservation, adaptive PNG filtering, and MozJPEG stay in `src/config/configuration.js`. Commands receive the resolved settings through their shared context. Scan and optimization share discovery settings, and the image processor receives the resolved encoding settings. Direct calls to the image modules use built-in defaults. See the [configuration guide](../guides/configuration.md) for public options and examples.
 

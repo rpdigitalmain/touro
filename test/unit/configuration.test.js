@@ -2,7 +2,8 @@ import assert from 'node:assert/strict';
 import { writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { describe, it, onTestFinished } from 'vitest';
-import { defaults } from '../../src/config/configuration.js';
+import { CONFIGURATION_FILENAME, defaults } from '../../src/config/configuration.js';
+import { writeStarterConfiguration } from '../../src/config/init.js';
 import { projectConfiguration } from '../../src/config/project.js';
 import { createConfigurationResolver, resolveConfiguration } from '../../src/config/resolve.js';
 import { createTemporaryDirectory } from '../shared/temporary-directory.js';
@@ -11,6 +12,16 @@ describe('configuration', () => {
   it('uses the built-in defaults when the file is absent', async (t) => {
     const cwd = await createTemporaryDirectory(t, 'touro-config-');
     assert.deepEqual(await resolveConfiguration({ cwd }), defaults);
+  });
+
+  it('writes all explicit public defaults and resolves them without changing behavior', async (t) => {
+    const cwd = await createTemporaryDirectory(t, 'touro-config-');
+    const withoutFile = await resolveConfiguration({ cwd });
+
+    await writeStarterConfiguration(join(cwd, CONFIGURATION_FILENAME));
+
+    assert.deepEqual(await projectConfiguration({ cwd }), JSON.parse(JSON.stringify(defaults)));
+    assert.deepEqual(await resolveConfiguration({ cwd }), withoutFile);
   });
 
   it('merges settings by section with explicit overrides taking priority', async (t) => {

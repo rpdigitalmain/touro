@@ -1,5 +1,7 @@
 export const CONFIGURATION_FILENAME = 'touro.config.js';
 
+export const pngCompressionRange = Object.freeze({ min: 0, max: 9 });
+
 export const defaults = Object.freeze({
   scan: Object.freeze({ directory: '.', format: undefined }),
   optimize: Object.freeze({ directory: '.', format: undefined, quality: 80 }),
@@ -10,7 +12,7 @@ export const defaults = Object.freeze({
   }),
   encoding: Object.freeze({
     jpeg: Object.freeze({ background: '#ffffff' }),
-    png: Object.freeze({ compressionLevel: 9 }),
+    png: Object.freeze({ compressionLevel: pngCompressionRange.max }),
   }),
 });
 

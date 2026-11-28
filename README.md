@@ -68,7 +68,7 @@ touro --no-config ./assets
 
 ## Project Configuration
 
-Run `touro init` in your project directory to create an optional `touro.config.js`. The starter file contains commented examples and keeps the built-in behavior until you add overrides. See the [configuration guide](docs/guides/configuration.md) for options, precedence, and examples.
+Run `touro init` in your project directory to create an optional `touro.config.js` with the built-in defaults and comments explaining each setting. Edit the values you want to customize. See the [configuration guide](docs/guides/configuration.md) for options, precedence, and examples.
 
 **Security.** Touro executes `touro.config.js` with your user permissions, including during `scan`. Only load configurations from projects you trust. Pass `--no-config` to use built-in defaults and explicit CLI options.
 

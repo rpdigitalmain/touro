@@ -1,6 +1,6 @@
 # Configuration
 
-Run `touro init` to create an optional `touro.config.js` in the working directory. The command chooses the module syntax for your project and preserves any existing file. Uncomment or add settings to customize Touro.
+Run `touro init` to create an optional `touro.config.js` in the working directory. The command chooses the module syntax for your project and preserves any existing file. The generated file sets the built-in defaults explicitly and explains each option. Edit a value to customize it, or add a `format` setting to filter scans or convert images.
 
 **Security.** Touro executes `touro.config.js` and its imports with your user permissions, including during `scan`. Only load configurations from projects you trust. Run `touro scan --no-config ./assets` to use built-in defaults and the explicit target.
 
