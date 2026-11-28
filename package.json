@@ -1,12 +1,12 @@
 
 {
   "name": "touro",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "description": "A cross-platform Node.js CLI for optimizing JPEG, PNG, and WebP images in place.",
   "type": "module",
 
   "bin": {
-    "touro": "./bin/touro.js"
+    "touro": "bin/touro.js"
   },
 
   "files": [

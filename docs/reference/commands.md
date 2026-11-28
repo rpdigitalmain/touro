@@ -7,7 +7,7 @@
 | `touro init` | Create `touro.config.js` in the working directory. An existing file is preserved and the command reports an error. |
 | `touro info` | Show the Touro and Node.js versions, system information, and application paths. |
 
-The default target for scan and optimization is the working directory. Both accept an explicit relative or absolute directory. Quote paths that contain spaces. Use `--` to pass a directory name that starts with a dash or matches a command, as in `touro -- scan`.
+When you omit a target, Touro uses `scan.directory` or `optimize.directory` from the project configuration if set, and otherwise uses the working directory. Both commands accept relative and absolute paths. Quote paths that contain spaces. Use `--` before a directory name that starts with a dash or matches a command, as in `touro -- scan`. See [configuration precedence](../guides/configuration.md#precedence).
 
 ## Options
 

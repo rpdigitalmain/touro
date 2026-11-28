@@ -6,17 +6,24 @@ Touro supports recursive discovery, in-place optimization, and format conversion
 
 Touro discovers JPEG, PNG, and WebP images recursively. Scanning and optimization skip symbolic links and directories whose names start with a dot. The default exclusion list also skips `node_modules`, `bower_components`, `vendor`, `build`, `dist`, and `dist-exe`. Override it with `discovery.excludedDirectories`. See the [configuration guide](../guides/configuration.md).
 
-`touro scan [directory]` defaults to the current directory. It lists relative paths, formats, and sizes based on the file extension. Use `touro scan --format webp` to list only WebP files. Set `discovery.recursive` to `false` to limit both commands to the target directory.
+Scan identifies candidates by file extension. Set `discovery.recursive` to `false` to limit both scan and optimization to files directly inside the target directory.
 
 ## In-Place Optimization
-
-`touro [directory]` optimizes images recursively. It uses the current directory when the argument is omitted. You can pass a relative path such as `touro ./assets`, an absolute path such as `touro /home/user/images`, or quote a path with spaces such as `touro "C:\Users\User\My Pictures"`. Pass `--` before a directory name that starts with a dash or matches a subcommand.
 
 Same-format optimization keeps the original filename, including the case of its extension, and replaces the file only when the result is smaller. Touro stages the complete result beside the source and uses an atomic rename to replace the original.
 
 `--quality <number>` sets JPEG and WebP quality from 1 to 100 and defaults to 80. PNG compression is lossless.
 
-The CLI processes one image at a time and caps libvips concurrency at two threads per image. It rejects inputs larger than 256 MiB or 67,108,864 pixels and applies a 120-second Sharp processing timeout per image. Sharp starts that timer when libvips opens the input. A PNG may contain up to 4,096 chunks before or including its first image-data chunk.
+### Processing Limits
+
+The CLI processes one image at a time and caps libvips concurrency at two threads per image.
+
+| Limit | Maximum |
+|---|---|
+| Input file size | 256 MiB |
+| Input dimensions | 67,108,864 pixels |
+| PNG chunks through the first image-data chunk | 4,096 |
+| Sharp processing time | 120 seconds per image, measured from when libvips opens the input |
 
 ## Format Conversion
 

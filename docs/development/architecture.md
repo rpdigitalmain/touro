@@ -37,6 +37,30 @@ Linux uses ownership and POSIX mode bits. Windows uses a single Windows PowerShe
 | ESLint | Checks JavaScript source, tests, and scripts. |
 | GitHub Actions, npm audit, and CodeQL | Run checks on Linux and Windows, audit dependencies, and scan JavaScript for security issues. |
 
+## Continuous Integration
+
+The [CI workflow](../../.github/workflows/ci.yml) runs on pull requests and pushes to `main` and `develop`. It lints, tests, and checks the packaged CLI on Linux and Windows with Node.js 24 and 26. The Node.js 26 jobs also build and exercise the standalone binaries. Vitest uses the Node.js environment and discovers `*.test.js` files under `test/`.
+
+The dependency audit checks runtime and development packages in `package-lock.json` against the npm registry. It reports all severities and fails on high or critical findings.
+
+CodeQL runs on Ubuntu after the test jobs pass for pull requests and pushes to `main`. Results appear under **Security → Code scanning**. This workflow uses advanced setup, which requires disabling the repository's default setup if it is enabled. Private repositories require GitHub Code Security. [GitHub CodeQL setup](https://docs.github.com/en/code-security/how-tos/find-and-fix-code-vulnerabilities/configure-code-scanning/configuring-advanced-setup-for-code-scanning).
+
+## Performance Benchmarks
+
+Run `npm run bench` with Node.js 24 or 26. Benchmarks run separately from the test suite and publish measurements without pass/fail thresholds. The [performance workflow](../../.github/workflows/performance.yml) also runs on Mondays at 04:23 UTC and supports manual runs.
+
+| Scenario | Measurement |
+|---|---|
+| Startup | A fresh Node.js process for each `--help` or `--version` sample |
+| Discovery | Trees of 100, 500, and 2,000 images, with a path-only comparison for the largest tree |
+| Optimization | Batches of three JPEG, PNG, or WebP images at 256×256 and 1,024×1,024 |
+| Processing stages | Reading, buffer-to-buffer encoding, file-to-file encoding, and atomic replacement for larger fixtures. File-to-file timing includes writing and removing the output. |
+| Concurrency and memory | One or two independent sub-batches totaling 48 images, with RSS and V8 heap sampled every 10 ms during discovery and three rounds per concurrency level |
+
+Tinybench warms up each scenario and reports mean, median, standard deviation, and images per second. Fixture generation and restoration are outside the timed measurements. Temporary fixtures are removed after execution.
+
+Compare results on the same machine, Node.js version, and filesystem. RSS includes native allocations, and sampling may miss short-lived peaks. The concurrency benchmark runs independent sub-batches in the same process, while a CLI invocation processes its batch sequentially.
+
 ## Project Layout
 
 ```text
