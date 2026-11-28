@@ -1,5 +1,5 @@
 import { Option } from 'commander';
-import { DEFAULT_SOURCE, OPERATION_FAILED } from '../constants/application.js';
+import { OPERATION_FAILED } from '../constants/application.js';
 import { IMAGE_FORMATS } from '../constants/images.js';
 import { ImageSource } from '../images/source.js';
 import { TouroError } from '../errors/errors.js';
@@ -9,13 +9,16 @@ export function registerScan(program, context) {
   program
     .command('scan')
     .description('Find image files recursively by extension')
-    .argument('[directory]', 'Directory to scan', DEFAULT_SOURCE)
+    .argument('[directory]', 'Directory to scan')
     .addOption(new Option('--format <format>', 'Only list images of this format').choices(IMAGE_FORMATS))
-    .action(async (path, { format }) => {
+    .action(async (directory, options) => {
+      const format = options.format ?? program.opts().format;
+      const { logger, configuration } = await context({ scan: { directory, format } });
+      const path = configuration.scan.directory;
       let images;
       try {
         const source = await ImageSource.open(path);
-        images = await source.listImages({ format: format ?? program.opts().format });
+        images = await source.listImages({ format: configuration.scan.format, ...configuration.discovery });
       } catch (cause) {
         throw new TouroError(OPERATION_FAILED, {
           cause,
@@ -23,6 +26,6 @@ export function registerScan(program, context) {
         });
       }
 
-      presentScan(context().logger, images);
+      presentScan(logger, images);
     });
 }

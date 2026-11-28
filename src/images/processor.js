@@ -6,22 +6,25 @@ import { loadSharp } from '../runtime/load-sharp.js';
 import { IMAGE_STATUS } from '../constants/images.js';
 import { INFRASTRUCTURE_ERROR, TouroError } from '../errors/errors.js';
 import { IMAGE_ERROR } from './errors.js';
+import { defaults, internal } from '../config/configuration.js';
 
 export class ImageProcessor {
   #sharp;
+  #encoding;
 
-  constructor(sharp) {
+  constructor(sharp, encoding = defaults.encoding) {
     this.#sharp = sharp;
+    this.#encoding = encoding;
   }
 
-  static async create() {
+  static async create(encoding) {
     let sharp;
     try {
       sharp = await loadSharp();
     } catch (cause) {
       throw new TouroError(INFRASTRUCTURE_ERROR.RUNTIME_LOAD_FAILED, { cause });
     }
-    return new ImageProcessor(sharp);
+    return new ImageProcessor(sharp, encoding);
   }
 
   async optimize(root, { image, format, targetPath }, quality) {
@@ -32,7 +35,7 @@ export class ImageProcessor {
     let pipeline;
     let metadata;
     try {
-      pipeline = this.#sharp(original, { failOn: 'warning' });
+      pipeline = this.#sharp(original, internal.encoding.input);
       metadata = await pipeline.metadata();
     } catch (cause) {
       throw new TouroError(INFRASTRUCTURE_ERROR.DECODE_FAILED, { cause, context: { source } });
@@ -48,8 +51,9 @@ export class ImageProcessor {
 
     let optimized;
     try {
-      pipeline.autoOrient().keepIccProfile();
-      configureEncoder(format, pipeline, metadata, quality);
+      pipeline.autoOrient();
+      if (internal.optimize.keepIccProfile) pipeline.keepIccProfile();
+      configureEncoder(format, pipeline, metadata, quality, this.#encoding);
       optimized = await pipeline.toBuffer();
     } catch (cause) {
       throw new TouroError(INFRASTRUCTURE_ERROR.ENCODE_FAILED, { cause, context: { source, format } });

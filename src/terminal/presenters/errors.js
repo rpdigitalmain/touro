@@ -1,5 +1,5 @@
 import { IMAGE_ERROR } from '../../images/errors.js';
-import { OPERATION_FAILED, UNSUPPORTED_PLATFORM } from '../../constants/application.js';
+import { INVALID_CONFIGURATION, OPERATION_FAILED, UNSUPPORTED_PLATFORM } from '../../constants/application.js';
 import { INFRASTRUCTURE_ERROR, TouroError } from '../../errors/errors.js';
 import { displayPath, escapeControls } from '../format.js';
 
@@ -68,6 +68,8 @@ function describeError(error, fallback = unexpected) {
       return `${describeError(cause)} Temporary-file cleanup also failed: ${describeError(context.cleanupError, 'rerun with --verbose for details.')}`;
     case UNSUPPORTED_PLATFORM:
       return `Touro supports Linux and Windows. The current platform is ${context.platform}.`;
+    case INVALID_CONFIGURATION:
+      return `Could not load configuration ${quotePath(context.path)}: ${context.reason}`;
     default:
       return fallback;
   }
@@ -75,7 +77,7 @@ function describeError(error, fallback = unexpected) {
 
 function presentOperationFailure(logger, operation, path, error) {
   const message = `Could not ${operation} ${quotePath(path)}: ${describeError(error)}`;
-  logger.error(escapeControls(message), { color: false });
+  logger.error(escapeControls(message));
 }
 
 export function presentError(logger, error) {

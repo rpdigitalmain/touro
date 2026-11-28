@@ -4,9 +4,9 @@ Touro supports recursive discovery, in-place optimization, and format conversion
 
 ## Image Discovery
 
-Touro discovers JPEG, PNG, and WebP images recursively. Scanning and optimization skip symbolic links, directories whose names start with a dot, and directories named `node_modules`, `bower_components`, `vendor`, `build`, `dist`, or `dist-exe`.
+Touro discovers JPEG, PNG, and WebP images recursively. Scanning and optimization skip symbolic links and directories whose names start with a dot. The default exclusion list also skips `node_modules`, `bower_components`, `vendor`, `build`, `dist`, and `dist-exe`. Override it with `discovery.excludedDirectories` in [Project Configuration](../README.md#project-configuration).
 
-`touro scan [directory]` defaults to the current directory. It lists relative paths, formats, and sizes based on the file extension. Use `touro scan --format webp` to list only WebP files.
+`touro scan [directory]` defaults to the current directory. It lists relative paths, formats, and sizes based on the file extension. Use `touro scan --format webp` to list only WebP files. Set `discovery.recursive` to `false` to limit both commands to the target directory.
 
 ## In-Place Optimization
 
@@ -20,7 +20,7 @@ Same-format optimization keeps the original filename, including the case of its 
 
 Use `--format jpeg|png|webp` to convert images. The result uses the new extension in the same directory. Touro removes the original after publishing the result successfully. Publication requires hard-link support on the filesystem.
 
-Touro skips conversions with occupied target paths or conflicting inputs. JPEG conversion uses a white background for transparency.
+Touro skips conversions with occupied target paths or conflicting inputs. JPEG conversion uses a white background for transparency by default. Set `encoding.jpeg.background` to choose another opaque color.
 
 ## Optimization Report
 

@@ -1,7 +1,7 @@
 import { copyFile, lstat, mkdir, readFile, readdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import sharp from 'sharp';
-import { OPTIMIZATION_QUALITY } from '../../src/constants/images.js';
+import { defaults } from '../../src/config/configuration.js';
 import { configureEncoder, imageFormatFor } from '../../src/images/formats.js';
 import { replaceImage } from '../../src/images/replace.js';
 
@@ -19,7 +19,7 @@ export async function createStageScenarios(batches) {
       const pipeline = sharp(original, { failOn: 'warning' });
       const metadata = await pipeline.metadata();
       pipeline.autoOrient().keepIccProfile();
-      configureEncoder(format, pipeline, metadata, OPTIMIZATION_QUALITY.DEFAULT);
+      configureEncoder(format, pipeline, metadata, defaults.optimize.quality);
       return pipeline.toBuffer();
     };
     const optimized = await encode();

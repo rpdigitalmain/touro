@@ -3,8 +3,7 @@ import { join, relative, resolve } from 'node:path';
 import { imageFormatFor } from './formats.js';
 import { IMAGE_ERROR } from './errors.js';
 import { TouroError } from '../errors/errors.js';
-
-const excludedDirectories = new Set(['node_modules', 'bower_components', 'vendor', 'build', 'dist', 'dist-exe']);
+import { defaults } from '../config/configuration.js';
 
 class ImageFile {
   #path;
@@ -38,7 +37,7 @@ class ImageDirectory {
     for (const entry of await readdir(this.#path, { withFileTypes: true })) {
       const childPath = join(this.#path, entry.name);
       if (entry.isDirectory()) {
-        if (entry.name.startsWith('.') || excludedDirectories.has(entry.name.toLowerCase())) continue;
+        if (!options.recursive || entry.name.startsWith('.') || options.excludedDirectories.has(entry.name.toLowerCase())) continue;
         yield* new ImageDirectory(childPath).images(root, options);
       } else if (entry.isFile()) {
         yield* new ImageFile(childPath).images(root, options);
@@ -70,8 +69,13 @@ export class ImageSource {
     return this.#root;
   }
 
-  async listImages(options = {}) {
-    const images = await Array.fromAsync(this.#node.images(this.#root, options));
+  async listImages({
+    excludedDirectories = defaults.discovery.excludedDirectories,
+    recursive = defaults.discovery.recursive,
+    ...options
+  } = {}) {
+    const excluded = new Set(excludedDirectories.map((name) => name.toLowerCase()));
+    const images = await Array.fromAsync(this.#node.images(this.#root, { ...options, recursive, excludedDirectories: excluded }));
     return images.sort((a, b) => a.path.localeCompare(b.path, 'en'));
   }
 }

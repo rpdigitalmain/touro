@@ -77,6 +77,6 @@ it('preserves optimization metrics in narrow terminals and reports size increase
     '2 images processed', '0 optimized · 1 converted · 0 unchanged · 1 failed',
     '', '100 B → 125 B · 25 B added (25.0%)',
   ]);
-  assert.deepEqual(errors, [['Could not process "broken.png": animated images are not supported.', { color: false }]]);
+  assert.deepEqual(errors, [['Could not process "broken.png": animated images are not supported.']]);
   assert.deepEqual(debug, [failure]);
 });

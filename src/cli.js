@@ -5,6 +5,7 @@ import { readPackageInfo } from './runtime/package-info.js';
 import { EXIT_CODE, PARTIAL_FAILURE, UNSUPPORTED_PLATFORM } from './constants/application.js';
 import { TouroError } from './errors/errors.js';
 import { presentError } from './terminal/presenters/errors.js';
+import { resolveConfiguration } from './config/resolve.js';
 
 function preserveLiteralDirectory(argv, commands) {
   const delimiter = argv.indexOf('--');
@@ -38,6 +39,7 @@ function handleCliError(logger, error) {
 
 export async function main(argv) {
   let program;
+  let logger;
   try {
     const pkg = readPackageInfo();
     if (!pkg.os.includes(process.platform)) {
@@ -51,23 +53,24 @@ export async function main(argv) {
       .version(pkg.version, '-v, --version', 'Show version')
       .helpOption('-h, --help', 'Show help')
       .option('--verbose', 'Print debug output')
-      .option('--no-color', 'Disable colored output (or set NO_COLOR=1)')
       .addHelpText('before', `${pkg.name} v${pkg.version}\n`)
       .addHelpText('after', '\nUse -- before a directory name that starts with "-" or matches a command.')
       .showHelpAfterError(`Run "${pkg.name} --help" for usage.`)
       .exitOverride();
 
-    registerCommands(program, () => ({
-      pkg,
-      logger: createLogger(program.opts()),
-    }));
+    registerCommands(program, async (overrides = {}) => {
+      const output = { ...overrides.output };
+      if (program.getOptionValueSource('verbose') === 'cli') output.verbose = program.opts().verbose;
+      const configuration = await resolveConfiguration({ cli: { ...overrides, output } });
+      logger = createLogger(configuration.output);
+      return { pkg, logger, configuration };
+    });
     await program.parseAsync(preserveLiteralDirectory(argv, program.commands), { from: 'user' });
     return EXIT_CODE.SUCCESS;
   } catch (error) {
     const options = program?.opts() ?? (Array.isArray(argv) ? {
       verbose: argv.includes('--verbose'),
-      color: !argv.includes('--no-color'),
     } : {});
-    return handleCliError(createLogger(options), error);
+    return handleCliError(logger ?? createLogger(options), error);
   }
 }

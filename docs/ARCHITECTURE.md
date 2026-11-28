@@ -4,6 +4,8 @@
 
 The npm launcher and the standalone executable share `src/run.js`. Commander dispatches `scan` and `info` or runs the root optimization action with a directory argument. The CLI handles uncaught errors and chooses the process exit code.
 
+When a command runs, the CLI calls the configuration facade, `resolveConfiguration`. It uses three injected provider functions for built-in defaults, the optional project file in the working directory, and parsed CLI inputs. The resolver applies providers in that order and merges each section by setting, so later sources override earlier ones. The project provider handles file loading and validation. Commands receive a frozen configuration object with frozen sections through their shared context, while image modules use built-in defaults for direct calls.
+
 Commands call the image modules for discovery and processing. The `scan` command reads file sizes during discovery. The batch optimizer discovers paths and formats, plans target paths, and aggregates results as it processes images sequentially. The processor reads each image, encodes it with Sharp, and delegates safe file replacement to the image replacement module.
 
 Presenters turn structured results and errors into terminal messages. The logger sends results to stdout and diagnostics to stderr. See [Features](FEATURES.md) for command behavior and supported formats.
@@ -18,6 +20,7 @@ touro/
 │   ├── run.js             Entry point shared by npm and the executable
 │   ├── cli.js             Global options, command dispatch, and errors
 │   ├── commands/          Commander subcommands and registration
+│   ├── config/            Built-in settings and project configuration loading
 │   ├── images/            Image discovery, encoding, and file replacement
 │   ├── terminal/          Logging and shared console formatting
 │   │   └── presenters/    Command reports and error messages

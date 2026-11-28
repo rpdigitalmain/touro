@@ -16,13 +16,13 @@ describe('CLI command dispatch', () => {
     vi.spyOn(process.stdout, 'write').mockImplementation(() => { throw new Error('Unexpected write failure'); });
     const stderr = vi.spyOn(process.stderr, 'write').mockReturnValue(true);
 
-    assert.equal(await main(['info', '--no-color']), 1);
+    assert.equal(await main(['info']), 1);
     assert.deepEqual(stderr.mock.calls.map(([line]) => line), [
       'error: An unexpected error occurred. Rerun with --verbose for details.\n',
     ]);
 
     stderr.mockClear();
-    assert.equal(await main(['info', '--no-color', '--verbose']), 1);
+    assert.equal(await main(['info', '--verbose']), 1);
     assert.match(stderr.mock.calls[1][0], /debug: Error: Unexpected write failure\n\s+at /);
   });
 });

@@ -1,5 +1,6 @@
 import { extname } from 'node:path';
 import { IMAGE_EXTENSIONS, IMAGE_FORMAT } from '../constants/images.js';
+import { defaults, internal } from '../config/configuration.js';
 
 function isAnimatedPng(bytes) {
   // APNG signals animation with an acTL chunk before the first image data chunk.
@@ -14,16 +15,16 @@ function isAnimatedPng(bytes) {
 
 const formats = {
   [IMAGE_FORMAT.JPEG]: {
-    encode(pipeline, metadata, quality) {
-      if (metadata.hasAlpha) pipeline.flatten({ background: '#ffffff' });
-      pipeline.jpeg({ quality, mozjpeg: true });
+    encode(pipeline, metadata, quality, { jpeg }) {
+      if (metadata.hasAlpha) pipeline.flatten({ background: jpeg.background });
+      pipeline.jpeg({ quality, mozjpeg: internal.encoding.jpeg.mozjpeg });
     },
   },
   [IMAGE_FORMAT.PNG]: {
     isAnimated: isAnimatedPng,
-    encode(pipeline, metadata) {
+    encode(pipeline, metadata, _quality, { png }) {
       if (metadata.bitsPerSample === 16) pipeline.toColourspace('rgb16');
-      pipeline.png({ compressionLevel: 9, adaptiveFiltering: true });
+      pipeline.png({ compressionLevel: png.compressionLevel, adaptiveFiltering: internal.encoding.png.adaptiveFiltering });
     },
   },
   [IMAGE_FORMAT.WEBP]: {
@@ -53,6 +54,6 @@ export function isAnimatedImage(bytes, metadata) {
   return metadata.pages > 1 || (formats[metadata.format].isAnimated?.(bytes) ?? false);
 }
 
-export function configureEncoder(format, pipeline, metadata, quality) {
-  formats[format].encode(pipeline, metadata, quality);
+export function configureEncoder(format, pipeline, metadata, quality, encoding = defaults.encoding) {
+  formats[format].encode(pipeline, metadata, quality, encoding);
 }

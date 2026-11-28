@@ -2,8 +2,9 @@ import { lstat } from 'node:fs/promises';
 import { join } from 'node:path';
 import { outputPathFor } from './formats.js';
 import { ImageSource } from './source.js';
-import { DEFAULT_SOURCE, PLATFORM } from '../constants/application.js';
-import { IMAGE_STATUS, OPTIMIZATION_QUALITY } from '../constants/images.js';
+import { PLATFORM } from '../constants/application.js';
+import { IMAGE_STATUS } from '../constants/images.js';
+import { defaults } from '../config/configuration.js';
 import { TouroError } from '../errors/errors.js';
 import { IMAGE_ERROR, targetExistsError } from './errors.js';
 
@@ -24,10 +25,12 @@ export class BatchOptimizer {
     this.#createProcessor = createProcessor;
   }
 
-  async run(path = DEFAULT_SOURCE, { format, quality = OPTIMIZATION_QUALITY.DEFAULT } = {}) {
+  async run(path = defaults.optimize.directory, {
+    format, quality = defaults.optimize.quality, excludedDirectories, recursive, encoding,
+  } = {}) {
     const source = await ImageSource.open(path);
     const { root } = source;
-    const images = await source.listImages({ includeSize: false });
+    const images = await source.listImages({ includeSize: false, excludedDirectories, recursive });
     const destinations = new Map();
     for (const image of images) {
       const outputFormat = format ?? image.format;
@@ -66,7 +69,7 @@ export class BatchOptimizer {
     }
 
     if (ready.length > 0) {
-      const processor = await this.#createProcessor();
+      const processor = await this.#createProcessor(encoding);
       for (const job of ready) {
         let result;
         try {
