@@ -140,19 +140,13 @@ CI builds and tests standalone executables on Linux and Windows using Node.js 26
 | Watch tests | `npm run test:watch` |
 | Audit dependencies | `npm run audit:deps` |
 
-### Local Docker and Actions Checks
+### Local Docker Checks
 
 With Docker running, build the test image and run lint and the full test suite.
 
 ```sh
 docker build -t touro-local-test .
 docker run --rm touro-local-test
-```
-
-Use `act` to simulate the npm release job with npm dry-run mode and a placeholder token. The runner configuration is in `.actrc`.
-
-```sh
-act push -W .github/workflows/release.yml --env NPM_CONFIG_DRY_RUN=true -s NPM_TOKEN=local-dry-run
 ```
 
 ### Performance Benchmarks
