@@ -2,16 +2,26 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, develop]
   pull_request:
 
 jobs:
+  audit:
+    name: Dependency audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 26
+      - run: npm run audit:deps
+
   test:
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest]
-        node: [22, 24]
+        node: [24, 26]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v5
@@ -20,6 +30,7 @@ jobs:
           node-version: ${{ matrix.node }}
           cache: npm
       - run: npm ci
+      - run: npm run lint
       - run: npm test
       # Smoke-test the packed tarball the way users will install it.
       - name: Install packed CLI globally
@@ -28,12 +39,36 @@ jobs:
           npm pack
           npm install -g ./touro-*.tgz
           touro --version
-          touro greet CI
+          touro --help
           touro info
-      # Build and test standalone executables with Node 24.
+          sample="$(mktemp -d)"
+          node --input-type=module -e "import sharp from 'sharp'; await sharp({ create: { width: 8, height: 8, channels: 3, background: 'red' } }).png().toFile(process.argv[1]);" "$sample/input.png"
+          (cd "$sample" && touro --format webp)
+          test -s "$sample/input.webp"
+          test ! -e "$sample/input.png"
+      # Build and test ESM standalone executables with Node 26.
       - name: Build and test standalone executable
-        if: matrix.node == 24
+        if: matrix.node == 26
         shell: bash
         run: |
           npm run build:exe
           CLI_EXE="$PWD/dist-exe/touro$([ "$RUNNER_OS" = Windows ] && echo .exe)" npm run test:e2e
+
+  codeql:
+    name: CodeQL (JavaScript)
+    needs: test
+    if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: github/codeql-action/init@v4
+        with:
+          languages: javascript-typescript
+          build-mode: none
+      - uses: github/codeql-action/analyze@v4

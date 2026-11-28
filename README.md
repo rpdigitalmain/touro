@@ -1,89 +1,172 @@
-# touro
+<p align="center">
+  <img
+    src="https://pub-5cb1d207265c4c5484fbf2e19765e499.r2.dev/images/touro-banner.png"
+    alt="Touro Banner"
+    width="100%"
+  />
+</p>
 
-Touro is a Node.js CLI for image optimization on Linux and Windows, written in JavaScript. Use `scan` to inventory the images in a project.
+<h1 align="center">Touro</h1>
 
-## Local installation
+<p align="center">
+  A Node.js CLI for image optimization on Linux and Windows.
+</p>
 
-Use Node.js 22 or later and run the commands below from the root of your local Touro checkout.
+<p align="center">
+  <img src="https://img.shields.io/badge/Node.js-24%20%7C%2026-339933?logo=node.js&logoColor=white" alt="Node.js 24 and 26" />
+  <img src="https://img.shields.io/badge/platforms-Linux%20%7C%20Windows-555555" alt="Linux and Windows" />
+  <img src="https://img.shields.io/badge/type-CLI-222222" alt="CLI" />
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/rpdigitalmain/touro?color=blue" alt="License" /></a>
+  <a href="https://github.com/rpdigitalmain/touro/actions/workflows/ci.yml"><img src="https://github.com/rpdigitalmain/touro/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
+</p>
 
-### Windows (PowerShell)
+<p align="center">
+  🇧🇷 <strong>Proudly made in Brazil.</strong>
+</p>
 
-```powershell
-npm ci
-npm run dev -- --help
-npm run dev -- scan "C:\path\to\images" --format webp
-```
+---
 
-To make the CLI available from other directories, link it locally.
+## Overview
 
-```powershell
-npm link
-touro --version
-touro scan "C:\path\to\images"
-```
+Touro optimizes JPEG, PNG, and WebP images directly in their original locations. It supports recursive discovery, format conversion, configurable quality, and processing reports.
 
-If PowerShell blocks the `.ps1` launchers, use `npm.cmd` and `touro.cmd`.
+## Contents
 
-### Linux
+- [Local Installation](#local-installation)
+- [Usage](#usage)
+- [Project Configuration](#project-configuration)
+- [Documentation](#documentation)
+- [Standalone Executables](#standalone-executables)
+- [Development](#development)
+
+---
+
+## Local Installation
+
+Install Node.js 24 or 26. From a local clone, run these commands on Linux or Windows.
 
 ```sh
 npm ci
-npm run dev -- --help
-npm run dev -- scan ./assets --format webp
-```
-
-To make the CLI available from other directories, link it locally.
-
-```sh
 npm link
 touro --version
-touro scan ./assets
 ```
 
-Replace the example image path with the directory you want to scan. After linking, `touro scan` scans your current directory. The command links to your checkout and uses its source files directly.
+The linked command runs from your local checkout. To try the CLI without linking it, run `npm run dev -- --help`. If PowerShell blocks `.ps1` launchers, use `npm.cmd` and `touro.cmd`.
+
+---
 
 ## Usage
 
+Scan the target directory first. Optimization modifies files in place, so keep a backup and review the [safe usage guide](docs/guides/safe-usage.md) before processing originals. These examples skip the optional project configuration.
+
 ```sh
-touro --help
-touro scan
-touro scan ./assets --format webp
-touro greet Ada --shout --times 2
-touro greet --help
-touro info --json
+touro scan --no-config ./assets
+touro --no-config ./assets
 ```
 
-Use `--verbose` for debug output and `--no-color` to disable colored diagnostics. Results go to stdout and diagnostics go to stderr. Exit codes are `0` for success, `1` for failure or an unknown command, and `2` for invalid arguments or options.
+---
 
-`touro scan [path]` defaults to the current directory. It lists relative paths, formats, and file sizes for `.jpg`, `.jpeg`, `.png`, and `.webp` files, including uppercase extensions. It searches subdirectories, skips symbolic links, and reports the image count and total size. Format detection is based on the file extension.
+## Project Configuration
 
-## Project layout
+Run `touro init` in your project directory to create an optional `touro.config.js`. The starter file contains commented examples and keeps the built-in behavior until you add overrides. See the [configuration guide](docs/guides/configuration.md) for options, precedence, and examples.
 
-```text
-bin/touro.js           npm command entry point
-src/run.js             Process entry point shared by npm and the executable
-src/cli.js             Global options, command dispatch, and errors
-src/commands/          Commander subcommands registered in index.js
-src/lib/               Logging, platform paths, and package metadata
-scripts/build-exe.mjs  Standalone executable build
-test/unit/             Isolated module tests
-test/integration/      Command dispatch and argument handling
-test/e2e/              CLI invoked as a separate process
-```
+**Security.** Touro executes `touro.config.js` with your user permissions, including during `scan`. Only load configurations from projects you trust. Pass `--no-config` to use built-in defaults and explicit CLI options.
 
-## Tests
+---
 
-`npm test` runs all tests. Run a single group with `npm run test:unit`, `npm run test:integration`, or `npm run test:e2e`.
+## Documentation
 
-## Standalone executables
+| Document | Covers |
+|---|---|
+| [Safe usage](docs/guides/safe-usage.md) | Backups, scan scope, and in-place changes |
+| [Configuration](docs/guides/configuration.md) | Public settings, defaults, and precedence |
+| [Commands](docs/reference/commands.md) | Syntax, options, and exit codes |
+| [Features](docs/reference/features.md) | Discovery, conversion, processing limits, and reports |
+| [Troubleshooting](docs/guides/troubleshooting.md) | Common failures and what to do next |
+| [Architecture](docs/development/architecture.md) | Module boundaries, the standalone cache, and development tooling |
+| [Security policy](docs/SECURITY.md) | Private vulnerability reporting |
 
-Use Node.js 24 to build the standalone executable.
+---
+
+## Standalone Executables
+
+Touro supports standalone executable builds using Node.js 26.
+
+### Build
 
 ```sh
 npm ci
 npm run build:exe
 ```
 
-The build creates `dist-exe/touro` (`dist-exe/touro.exe` on Windows) for the current platform. The executable includes Node.js. Set `CLI_EXE` to the executable path when running `npm run test:e2e` to test the binary.
+The build generates an executable for the current platform:
 
-CI runs on Linux and Windows and tests the standalone executable on Node.js 24.
+| Platform | Output |
+|---|---|
+| Linux | `dist-exe/touro` |
+| Windows | `dist-exe/touro.exe` |
+
+### Runtime
+
+The executable includes Node.js and extracts its image runtime into the local Touro cache when an image optimization operation is first executed. It checks ownership, write access, links, and asset integrity before loading the runtime. Keep this cache in a trusted per-user location. On Windows, standalone cache checks use the system Windows PowerShell to read filesystem access controls.
+
+### Executable Testing
+
+Set `CLI_EXE` to the executable path when running the end-to-end tests:
+
+```sh
+CLI_EXE=./dist-exe/touro npm run test:e2e
+```
+
+On Windows PowerShell:
+
+```powershell
+$env:CLI_EXE = ".\dist-exe\touro.exe"
+npm run test:e2e
+```
+
+CI builds and tests standalone executables on Linux and Windows using Node.js 26.
+
+---
+
+## Development
+
+| Task | Command |
+|---|---|
+| Run the linter | `npm run lint` |
+| Apply automatic lint fixes | `npm run lint:fix` |
+| Run all tests | `npm test` |
+| Run one test group | `npm run test:unit`, `npm run test:integration`, or `npm run test:e2e` |
+| Watch tests | `npm run test:watch` |
+| Audit dependencies | `npm run audit:deps` |
+
+### Local Docker and Actions Checks
+
+With Docker running, build the test image and run lint and the full test suite.
+
+```sh
+docker build -t touro-local-test .
+docker run --rm touro-local-test
+```
+
+Use `act` to simulate the npm release job with npm dry-run mode and a placeholder token. The runner configuration is in `.actrc`.
+
+```sh
+act push -W .github/workflows/release.yml --env NPM_CONFIG_DRY_RUN=true -s NPM_TOKEN=local-dry-run
+```
+
+### Performance Benchmarks
+
+Run `npm run bench` with Node.js 24 or 26. See the [benchmark scenarios and measurement notes](docs/development/architecture.md#performance-benchmarks).
+
+### Code Scanning
+
+CI runs CodeQL on pull requests and pushes to `main`. See [continuous integration](docs/development/architecture.md#continuous-integration) for the test matrix, dependency audit, and CodeQL setup.
+
+---
+
+<p align="center">
+  <strong>Touro</strong>
+  <br />
+  <sub>Image Optimization CLI</sub>
+</p>

@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
 import { join } from 'node:path';
-import { describe, it } from 'node:test';
-import { appPaths } from '../../src/lib/paths.js';
+import { describe, it } from 'vitest';
+import { appPaths } from '../../src/runtime/paths.js';
+import { UNSUPPORTED_PLATFORM } from '../../src/constants/application.js';
 
 // path.join uses the host separator, so expectations are built with it too.
 describe('appPaths', () => {
@@ -14,7 +15,10 @@ describe('appPaths', () => {
   });
 
   it('rejects unsupported platforms', () => {
-    assert.throws(() => appPaths('app', 'freebsd', {}, home), /Unsupported platform: freebsd/);
+    assert.throws(() => appPaths('app', 'freebsd', {}, home), {
+      code: UNSUPPORTED_PLATFORM,
+      context: { platform: 'freebsd' },
+    });
   });
 
   it('honors XDG variables on Linux', () => {

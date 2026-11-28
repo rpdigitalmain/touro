@@ -1,5 +1,7 @@
 import { homedir } from 'node:os';
 import { join } from 'node:path';
+import { PLATFORM, UNSUPPORTED_PLATFORM } from '../constants/application.js';
+import { TouroError } from '../errors/errors.js';
 
 /**
  * Per-user directories following each platform's conventions:
@@ -12,7 +14,7 @@ export function appPaths(
   env = process.env,
   home = homedir(),
 ) {
-  if (platform === 'win32') {
+  if (platform === PLATFORM.WINDOWS) {
     const roaming = env.APPDATA ?? join(home, 'AppData', 'Roaming');
     const local = env.LOCALAPPDATA ?? join(home, 'AppData', 'Local');
     return {
@@ -22,8 +24,8 @@ export function appPaths(
     };
   }
 
-  if (platform !== 'linux') {
-    throw new Error(`Unsupported platform: ${platform}`);
+  if (platform !== PLATFORM.LINUX) {
+    throw new TouroError(UNSUPPORTED_PLATFORM, { context: { platform } });
   }
 
   return {

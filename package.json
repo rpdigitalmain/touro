@@ -1,37 +1,84 @@
+
 {
   "name": "touro",
-  "version": "0.1.0",
-  "description": "An image optimization CLI for Linux and Windows",
+  "version": "1.0.0",
+  "description": "A cross-platform Node.js CLI for optimizing JPEG, PNG, and WebP images in place.",
   "type": "module",
+
   "bin": {
     "touro": "bin/touro.js"
   },
+
   "files": [
-    "bin",
-    "src"
+    "bin/",
+    "src/"
   ],
-  "engines": {
-    "node": ">=22"
+
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rpdigitalmain/touro.git"
   },
-  "os": ["linux", "win32"],
+
+  "homepage": "https://github.com/rpdigitalmain/touro#readme",
+
+  "bugs": {
+    "url": "https://github.com/rpdigitalmain/touro/issues"
+  },
+
+  "engines": {
+    "node": "24.x || 26.x"
+  },
+
+  "os": [
+    "linux",
+    "win32"
+  ],
+
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/"
+  },
+
   "scripts": {
     "dev": "node bin/touro.js",
-    "clean": "node -e \"for (const d of ['dist-exe','build']) require('node:fs').rmSync(d,{recursive:true,force:true})\"",
-    "test": "node --test",
-    "test:unit": "node --test \"test/unit/**/*.test.js\"",
-    "test:integration": "node --test \"test/integration/**/*.test.js\"",
-    "test:e2e": "node --test \"test/e2e/**/*.test.js\"",
-    "build:exe": "node scripts/build-exe.mjs"
+    "lint": "eslint . --max-warnings=0",
+    "lint:fix": "npm run lint -- --fix",
+    "audit:deps": "npm audit --package-lock-only --include=dev --audit-level=high",
+    "clean": "node --input-type=module -e \"import { rmSync } from 'node:fs'; for (const directory of ['dist-exe', 'build']) rmSync(directory, { recursive: true, force: true })\"",
+    "test": "vitest run",
+    "test:watch": "vitest watch",
+    "test:unit": "vitest run test/unit",
+    "test:integration": "vitest run test/integration",
+    "test:e2e": "vitest run test/e2e",
+    "bench": "node test/performance/run.mjs",
+    "build:exe": "node scripts/build-exe.mjs",
+    "pack:check": "npm pack --dry-run",
+    "prepublishOnly": "npm run lint && npm test"
   },
+
   "keywords": [
-    "cli"
+    "cli",
+    "command-line",
+    "image",
+    "image-optimization",
+    "image-compression",
+    "jpeg",
+    "png",
+    "webp"
   ],
+
   "license": "MIT",
+
   "dependencies": {
-    "commander": "^14.0.3"
+    "commander": "^14.0.3",
+    "sharp": "^0.35.5"
   },
+
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "esbuild": "^0.28.2",
-    "postject": "^1.0.0-alpha.6"
+    "eslint": "^10.15.0",
+    "globals": "^17.14.0",
+    "tinybench": "^6.2.5",
+    "vitest": "^5.1.2"
   }
 }

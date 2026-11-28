@@ -1,0 +1,12 @@
+.git
+.vscode
+node_modules
+coverage
+build
+dist-exe
+*.tgz
+*.log
+.env
+.env.*
+.secrets
+.secrets.*

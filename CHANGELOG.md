@@ -7,11 +7,15 @@ Touro follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and uses
 
 ## [Unreleased]
 
+## [1.0.0]
+
+First stable release.
+
 ### Added
 
-- JavaScript CLI for Linux and Windows with Commander, generated help, and the `greet` and `info` commands.
-- Standalone executable builds for Linux and Windows.
-- Separate unit, integration, and end-to-end test suites.
-- CI on Linux and Windows with Node.js 22 and 24.
-- Weekly Dependabot updates for npm dependencies and GitHub Actions.
-- Recursive `scan` command with an optional format filter, file sizes, and aggregate totals.
+- CLI for Linux and Windows with Node.js 24 and 26 support, built-in help, and an `info` command with JSON output.
+- Recursive `scan` with an optional format filter, per-file sizes, and totals.
+- In-place optimization and batch conversion for JPEG, PNG, and WebP, with per-file results and aggregate savings. Same-format optimization replaces a file only when the result is smaller. Conversion protects occupied destinations.
+- Optional `touro.config.js` for discovery and encoding settings, a `touro init` command to create it, and a `--no-config` flag to skip loading it.
+- Image processing limits and per-file diagnostics so a failed image can be reported while the batch continues.
+- Standalone Linux and Windows builds using Node.js 26.

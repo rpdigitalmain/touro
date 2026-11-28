@@ -1,13 +1,13 @@
 import { arch, platform, release } from 'node:os';
-import { appPaths } from '../lib/paths.js';
+import { appPaths } from '../runtime/paths.js';
 
 export function registerInfo(program, context) {
   program
     .command('info')
     .description('Show environment and app directory information')
     .option('--json', 'Print machine-readable JSON')
-    .action(({ json }) => {
-      const { logger, pkg } = context();
+    .action(async ({ json }) => {
+      const { configuration, logger, pkg } = await context({ output: { json } });
       const data = {
         name: pkg.name,
         version: pkg.version,
@@ -18,7 +18,7 @@ export function registerInfo(program, context) {
         paths: appPaths(pkg.name),
       };
 
-      if (json) {
+      if (configuration.output.json) {
         logger.out(JSON.stringify(data, null, 2));
         return;
       }
