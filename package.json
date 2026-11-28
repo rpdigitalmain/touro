@@ -1,43 +1,33 @@
-
 {
-  "name": "touro",
+  "name": "@rpdigitalmain/touro",
   "version": "1.0.0",
   "description": "A cross-platform Node.js CLI for optimizing JPEG, PNG, and WebP images in place.",
   "type": "module",
-
   "bin": {
     "touro": "bin/touro.js"
   },
-
   "files": [
     "bin/",
     "src/"
   ],
-
   "repository": {
     "type": "git",
     "url": "git+https://github.com/rpdigitalmain/touro.git"
   },
-
   "homepage": "https://github.com/rpdigitalmain/touro#readme",
-
   "bugs": {
     "url": "https://github.com/rpdigitalmain/touro/issues"
   },
-
   "engines": {
     "node": "24.x || 26.x"
   },
-
   "os": [
     "linux",
     "win32"
   ],
-
   "publishConfig": {
     "registry": "https://registry.npmjs.org/"
   },
-
   "scripts": {
     "dev": "node bin/touro.js",
     "lint": "eslint . --max-warnings=0",
@@ -54,7 +44,6 @@
     "pack:check": "npm pack --dry-run",
     "prepublishOnly": "npm run lint && npm test"
   },
-
   "keywords": [
     "cli",
     "command-line",
@@ -65,14 +54,11 @@
     "png",
     "webp"
   ],
-
   "license": "MIT",
-
   "dependencies": {
     "commander": "^14.0.3",
     "sharp": "^0.35.5"
   },
-
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "esbuild": "^0.28.2",
